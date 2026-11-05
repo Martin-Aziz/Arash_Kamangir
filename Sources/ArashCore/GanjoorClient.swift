@@ -99,7 +99,9 @@ public actor GanjoorDiskLibrary {
         guard FileManager.default.fileExists(atPath: directory.path) else { return [] }
         let contents = try FileManager.default.contentsOfDirectory(atPath: directory.path)
         return Set(contents.compactMap { name in
-            name.hasSuffix(".complete") ? String(name.dropLast(".complete".count)) : nil
+            guard name.hasSuffix(".complete") else { return nil }
+            let slug = String(name.dropLast(".complete".count))
+            return GanjoorPath.isSafeRelative(slug) && !slug.contains("/") ? slug : nil
         })
     }
 
@@ -137,6 +139,16 @@ public actor GanjoorDiskLibrary {
     /// It never touches the source manifest, other poets or user bookmarks.
     public func removeOfflinePoet(_ slug: String) throws {
         try validatePoetSlug(slug)
+        // Refuse to traverse a symlinked archive root or a symlinked parent
+        // directory, even if the final slug itself was lexically validated.
+        for parent in [root,
+                       root.appendingPathComponent("poets"),
+                       root.appendingPathComponent("completed")] {
+            if let values = try? parent.resourceValues(forKeys: [.isSymbolicLinkKey]),
+               values.isSymbolicLink == true {
+                throw ArchivePathError.unsafePath
+            }
+        }
         let directory = try fileURL("poets/\(slug)")
         let completion = try fileURL("completed/\(slug).complete")
         if FileManager.default.fileExists(atPath: directory.path) {
