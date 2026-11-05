@@ -78,8 +78,38 @@ struct LibraryWindow: View {
     var body: some View {
         Group {
             if isFocusMode {
-                readerSurface
-                    .accessibilityIdentifier("focus-poetry-reader")
+                VStack(spacing: 0) {
+                    HStack(spacing: 14) {
+                        Button {
+                            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.26)) {
+                                isFocusMode = false
+                            }
+                        } label: {
+                            Label("Library", systemImage: "sidebar.left")
+                        }
+                        .buttonStyle(.plain)
+                        .modifier(ReaderGlassChrome())
+                        .help("Return to the poet and collection browser")
+                        .keyboardShortcut(.cancelAction)
+                        .accessibilityIdentifier("exit-poetry-focus")
+
+                        Spacer()
+
+                        Text("در خلوت شعر")
+                            .font(ReaderFontCatalog.font(readerFontName, size: 17))
+                            .foregroundStyle(readerAppearance.ornament)
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.top, 11)
+                    .padding(.bottom, 8)
+
+                    readerSurface
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(readerAppearance.background)
+                .accessibilityIdentifier("focus-poetry-reader")
             } else {
                 NavigationSplitView {
                     sidebar
