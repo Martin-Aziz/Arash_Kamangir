@@ -52,6 +52,21 @@ public struct GanjoorClient {
     }
 }
 
+/// A completed offline poet and its actual storage footprint.
+public struct OfflinePoetRecord: Identifiable, Equatable, Sendable {
+    public let slug: String
+    public let bytes: Int64
+    public let fileCount: Int
+
+    public var id: String { slug }
+
+    public init(slug: String, bytes: Int64, fileCount: Int) {
+        self.slug = slug
+        self.bytes = bytes
+        self.fileCount = fileCount
+    }
+}
+
 /// A private, application-support data directory. No downloaded data is executed or rendered as HTML.
 public actor GanjoorDiskLibrary {
     public let root: URL
@@ -93,6 +108,49 @@ public actor GanjoorDiskLibrary {
             throw ArchivePathError.unsafePath
         }
         try save(Data(), at: "completed/\(poetSlug).complete")
+    }
+
+    /// Enumerate only complete offline poets; exclude partial/resumable downloads.
+    public func offlinePoetRecords() throws -> [OfflinePoetRecord] {
+        try importedPoetSlugs().sorted().map { slug in
+            try validatePoetSlug(slug)
+            let directory = try fileURL("poets/\\(slug)")
+            var bytes: Int64 = 0
+            var count = 0
+            if let iterator = FileManager.default.enumerator(
+                at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey],
+                options: [.skipsHiddenFiles, .skipsPackageDescendants]
+            ) {
+                for case let url as URL in iterator {
+                    let values = try url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
+                    guard values.isRegularFile == true else { continue }
+                    bytes += Int64(values.fileSize ?? 0)
+                    count += 1
+                }
+            }
+            return OfflinePoetRecord(slug: slug, bytes: bytes, fileCount: count)
+        }
+    }
+
+    /// Remove one explicitly chosen poet's local files and completion marker.
+    /// It never touches the source manifest, other poets or user bookmarks.
+    public func removeOfflinePoet(_ slug: String) throws {
+        try validatePoetSlug(slug)
+        let directory = try fileURL("poets/\\(slug)")
+        let completion = try fileURL("completed/\\(slug).complete")
+        if FileManager.default.fileExists(atPath: directory.path) {
+            try FileManager.default.removeItem(at: directory)
+        }
+        if FileManager.default.fileExists(atPath: completion.path) {
+            try FileManager.default.removeItem(at: completion)
+        }
+    }
+
+    private func validatePoetSlug(_ slug: String) throws {
+        guard GanjoorPath.isSafeRelative(slug), !slug.contains("/") else {
+            throw ArchivePathError.unsafePath
+        }
     }
 
     private func fileURL(_ relative: String) throws -> URL {
