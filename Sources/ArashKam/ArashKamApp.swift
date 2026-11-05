@@ -387,47 +387,30 @@ struct LibraryWindow: View {
     }
 
     private var reader: some View {
-        Group {
+        ZStack(alignment: .bottomTrailing) {
             if let poem = model.poem {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        Text(poem.fullTitle ?? poem.title)
-                            .font(.system(size: 27, weight: .semibold, design: .serif))
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
-                            .accessibilityAddTraits(.isHeader)
-                            .accessibilityIdentifier("reader-poem-title")
-                            .accessibilityValue(Text(poem.fullURL))
-                        Divider()
-                        VStack(spacing: 20 + lineSpacing) {
-                            ForEach(poem.readingGroups) { group in
-                                if group.verses.count == 2 &&
-                                    group.verses[0].position == "Right" &&
-                                    group.verses[1].position == "Left" {
-                                    HStack(alignment: .firstTextBaseline, spacing: 24) {
-                                        verseText(group.verses[0].text)
-                                        verseText(group.verses[1].text)
-                                    }
-                                } else {
-                                    ForEach(group.verses) { verse in
-                                        verseText(verse.text)
-                                    }
-                                }
-                            }
-                        }
-                        .environment(\.layoutDirection, .rightToLeft)
-                        if let source = URL(string: "https://ganjoor.net" + poem.fullURL) {
-                            Link("View original on Ganjoor · مشاهده در گنجور",
-                                 destination: source)
-                                .font(.caption)
-                                .padding(.top, 18)
-                        }
-                    }
-                    .frame(maxWidth: readerContentWidth)
-                    .padding(.horizontal, 36)
-                    .padding(.vertical, 44)
-                    .frame(maxWidth: .infinity)
+                IlluminatedReaderView(
+                    poem: poem,
+                    poetName: model.selectedPoet?.nickname ?? "دیوان شعر",
+                    collectionName: model.category?.title ?? "",
+                    appearance: readerAppearance,
+                    style: pageStyle,
+                    fontName: readerFontName,
+                    fontSize: fontSize,
+                    lineSpacing: lineSpacing,
+                    contentWidth: readerContentWidth)
+                    .id(poem.fullURL)
+
+                Button {
+                    showingReadingSettings = true
+                } label: {
+                    Label("Style", systemImage: "paintpalette")
+                        .font(.subheadline.weight(.medium))
                 }
+                .buttonStyle(.plain)
+                .modifier(ReaderGlassChrome())
+                .help("Change poetry fonts, colors and page ornament")
+                .padding(20)
             } else if model.isLoading {
                 VStack(spacing: 12) {
                     ProgressView {
@@ -443,14 +426,21 @@ struct LibraryWindow: View {
                 .accessibilityIdentifier("reader-loading")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                EmptyPanel(symbol: "text.book.closed", headline: "A place for poetry",
-                           subtitle: "Browse a collection and select a poem to begin reading.")
+                VStack(spacing: 15) {
+                    ArashMark(color: readerAppearance.ornament)
+                        .frame(width: 55, height: 55)
+                    Text("در باغ سخن")
+                        .font(ReaderFontCatalog.font(readerFontName, size: 29))
+                        .foregroundStyle(readerAppearance.foreground)
+                    Text("Choose a poem and let the page become its home.")
+                        .foregroundStyle(readerAppearance.foreground.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(readerAppearance.background)
-        .foregroundStyle(readerAppearance.foreground)
-        .tint(readerAppearance.linkTint)
     }
 
     private var readingSettings: some View {
