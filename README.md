@@ -15,6 +15,16 @@ A **native SwiftUI macOS reader for Persian poetry**, powered by the public Ganj
 
 The download button downloads a **complete selected poet**: poet profile, category tree and all referenced poem JSON files. A completion marker appears only once every file succeeds. If interrupted, run it again; already cached poem files are skipped. Browsed poems and collections are cached too.
 
+## Phase 2A — GUI and local library management (in review)
+
+- Offline library management sheet: see completed poet downloads, file counts and actual local storage sizes; open a downloaded poet or remove its files after confirmation
+- Optional **Downloaded only** sidebar filter
+- **Saved Poetry** sheet: browse/filter bookmarks, reopen saved poems and remove bookmarks
+- Reader preferences: system, warm paper and night appearances, adjustable font size, verse spacing and reading width (persisted per Mac)
+- Storage tests for inventory, deletion isolation, invalid slugs and symlinked parents
+
+**Still pending:** SQLite/FTS5 full-text search, partial-download cache cleanup/repair, .s3db import, notarized DMG, VoiceOver/UI automation and physical Mac verification. These additions have not been certified on macOS yet. Use [the local Mac QA checklist](docs/LOCAL_MAC_QA.md) before distribution.
+
 ### Source and importing
 
 Ganjoor documents this static API:
@@ -67,7 +77,7 @@ Poet completions are recorded in completed/; files are stored under their origin
 ### Project roadmap
 
 1. **Foundation:** SwiftUI browsing, poem rendering, selective offline import (this PR).
-2. **Library engine:** SQLite/FTS5, robust diacritic-insensitive local poem search, offline library management, deletion, storage stats.
+2. **Library engine:** offline library manager, deletion and storage stats (Phase 2A); SQLite/FTS5, robust diacritic-insensitive local poem search and repair workflows still pending.
 3. **Compatibility:** Import older Ganjoor .s3db and user-supplied ZIP backups, import validation, backup/restore.
 4. **Reading experience:** Persian typography refinement, annotations, favorites library, recent reads, recitations.
 5. **Release:** app icon, accessibility verification, Mac CI, signed/notarized DMG, updates.
