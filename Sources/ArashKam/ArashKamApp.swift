@@ -27,6 +27,7 @@ struct LibraryWindow: View {
     @State private var splitVisibility: NavigationSplitViewVisibility = .all
     @State private var showingFilesSettings = false
     @State private var fontQuery = ""
+    @State private var fontImportNotice = ""
     @State private var installedPersianFonts: [ReaderFontChoice] = []
     @AppStorage("readerFontPostScriptName") private var readerFontName = ""
     @AppStorage("readerPageStyle") private var readerPageStyle = ReaderPageStyle.illuminated.rawValue
@@ -141,7 +142,10 @@ struct LibraryWindow: View {
         }
         .navigationTitle("آرش کمانگیر")
         .task { await model.bootstrap() }
-        .onAppear(perform: refreshFonts)
+        .onAppear {
+            ReaderUserFonts.registerExisting()
+            refreshFonts()
+        }
         .sheet(isPresented: $showingFilesSettings) {
             LibraryFilesSettings(
                 model: model,
@@ -511,11 +515,19 @@ struct LibraryWindow: View {
                             .font(.subheadline.weight(.medium))
                         Spacer()
                         Button {
-                            refreshFonts()
+                            importLocalFont()
                         } label: {
-                            Label("Refresh fonts", systemImage: "arrow.clockwise")
+                            Label("Add font…", systemImage: "plus.circle")
                         }
                         .font(.caption)
+                        .buttonStyle(.borderless)
+                        .accessibilityIdentifier("import-personal-font")
+                        Button {
+                            refreshFonts()
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .help("Refresh installed fonts")
                         .buttonStyle(.borderless)
                     }
 
@@ -540,7 +552,12 @@ struct LibraryWindow: View {
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
-                    Text("Installed fonts are discovered from macOS Font Book. No third-party font files are redistributed.")
+                    if !fontImportNotice.isEmpty {
+                        Text(fontImportNotice)
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    }
+                    Text("Fonts from macOS Font Book and your own .ttf/.otf/.ttc files appear here. User fonts remain on this Mac and are not redistributed.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                     Text("به جهان خرم از آنم که جهان خرم از اوست")
@@ -577,6 +594,26 @@ struct LibraryWindow: View {
             .padding(20)
         }
         .frame(width: 430, height: 610)
+    }
+
+    private func importLocalFont() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = ["ttf", "otf", "ttc"].compactMap {
+            UTType(filenameExtension: $0)
+        }
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.message = "Choose a Persian font file you are licensed to use."
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try ReaderUserFonts.importUserFont(url)
+            refreshFonts()
+            fontImportNotice = "Font added. Choose its typeface from the menu below."
+            fontQuery = ""
+        } catch {
+            model.errorMessage = "Could not add font: \(error.localizedDescription)"
+        }
     }
 
     private func exportCurrentPoem() {
