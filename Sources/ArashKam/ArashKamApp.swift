@@ -33,6 +33,7 @@ struct LibraryWindow: View {
     @State private var installedPersianFonts: [ReaderFontChoice] = []
     @AppStorage("readerFontPostScriptName") private var readerFontName = ""
     @AppStorage("readerPageStyle") private var readerPageStyle = ReaderPageStyle.illuminated.rawValue
+    @AppStorage("manuscriptTemplate") private var manuscriptTemplate = ManuscriptTemplate.royalLapis.rawValue
     @AppStorage("readerFontSize") private var fontSize = 24.0
     @AppStorage("readerLineSpacing") private var lineSpacing = 5.0
     @AppStorage("readerContentWidth") private var readerContentWidth = 820.0
@@ -40,6 +41,10 @@ struct LibraryWindow: View {
 
     private var pageStyle: ReaderPageStyle {
         ReaderPageStyle(rawValue: readerPageStyle) ?? .illuminated
+    }
+
+    private var chosenManuscript: ManuscriptTemplate {
+        ManuscriptTemplate(rawValue: manuscriptTemplate) ?? .royalLapis
     }
 
     private var matchingFonts: [ReaderFontChoice] {
@@ -134,7 +139,8 @@ struct LibraryWindow: View {
                     poem: poem,
                     poetName: model.selectedPoet?.nickname ?? "شعر",
                     appearance: readerAppearance,
-                    fontName: readerFontName)
+                    fontName: readerFontName,
+                    template: chosenManuscript)
             }
         }
         .sheet(isPresented: $showingFilesSettings) {
@@ -472,6 +478,7 @@ struct LibraryWindow: View {
                     collectionName: model.category?.title ?? "",
                     appearance: readerAppearance,
                     style: pageStyle,
+                    template: chosenManuscript,
                     fontName: readerFontName,
                     fontSize: fontSize,
                     lineSpacing: lineSpacing,
@@ -526,6 +533,7 @@ struct LibraryWindow: View {
                     Button("Reset") {
                         readerTheme = ReaderAppearance.paper.rawValue
                         readerPageStyle = ReaderPageStyle.illuminated.rawValue
+                        manuscriptTemplate = ManuscriptTemplate.royalLapis.rawValue
                         readerFontName = ""
                         fontSize = 24
                         lineSpacing = 5
@@ -571,6 +579,45 @@ struct LibraryWindow: View {
                 }
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("reader-page-style")
+
+                if pageStyle == .illuminated {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Manuscript edition · نسخهٔ تذهیب")
+                            .font(.subheadline.weight(.medium))
+                        ForEach(ManuscriptTemplate.allCases) { option in
+                            Button {
+                                manuscriptTemplate = option.rawValue
+                            } label: {
+                                HStack(spacing: 12) {
+                                    PersianIlluminatedHeadpiece(template: option, compact: true)
+                                        .frame(width: 89, height: 51)
+                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(option.title).font(.subheadline.weight(.medium))
+                                        Text(option.subtitle)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer(minLength: 2)
+                                    if manuscriptTemplate == option.rawValue {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(.tint)
+                                    }
+                                }
+                                .padding(7)
+                                .background(
+                                    manuscriptTemplate == option.rawValue
+                                    ? Color.accentColor.opacity(0.08)
+                                    : Color.clear,
+                                    in: RoundedRectangle(cornerRadius: 8))
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("manuscript-template-\(option.rawValue)")
+                        }
+                    }
+                    .accessibilityIdentifier("manuscript-template-picker")
+                }
 
                 Divider()
 
