@@ -25,6 +25,39 @@ The download button downloads a **complete selected poet**: poet profile, catego
 
 **Still pending:** SQLite/FTS5 full-text search, partial-download cache cleanup/repair, .s3db import, notarized DMG, VoiceOver/UI automation and physical Mac verification. These additions have not been certified on macOS yet. Use [the local Mac QA checklist](docs/LOCAL_MAC_QA.md) before distribution.
 
+## Illuminated reader redesign — draft, pending Mac QA
+
+An original, manuscript-inspired reading experience is under review in
+`feat/illuminated-persian-reader`:
+
+- **Six reader palettes:** System, Ivory, Midnight, Rose, Lapis and Jade.
+- **Two book-page styles:** Quiet (minimal) and Illuminated (original
+  vector rosettes, thin double borders and decorative poem separators).
+- **Persian font picker:** search installed macOS Persian-capable fonts
+  by PostScript name. Optionally add your own TTF/OTF/TTC via **Add font…**;
+  fonts are registered for this app process and stored only on this Mac.
+- **Focus mode:** temporarily hide the browsing columns so poems gain
+  comfortable line length and paired hemistiches can use wider space.
+- **Liquid Glass chrome:** floating style control on macOS 26+; the poem
+  itself stays on an opaque, readable book page. Older macOS uses
+  system material controls.
+- **Library & Files:** download/update the selected poet and export the
+  open poem as attributed UTF-8 text through a single dedicated settings
+  sheet. Book/PDF/EPUB/.s3db import is not supported yet.
+- **Original logo:** an Arash bow-and-arrow vector emblem and an actual
+  native icon in the local packaging script, not a copied illustration.
+
+Fonts installed locally or added as uncommitted font files **are not
+contained in this GitHub repository**. Select them from Font Book or use
+the reader's **Add font…** action. The program does not distribute their
+binaries. Font availability and shaping must be verified on the Mac.
+
+See [the full design research, roadmap and QA gate](docs/ILLUMINATED_READER_DESIGN.md).
+This branch has **not** been compiled or visually certified on macOS yet,
+and should remain unmerged until verified. The previous QA validated
+Hafez poem selection and many existing controls, but an upstream HTTP
+403 still blocks a complete Babataher offline download (issue #10).
+
 ### Source and importing
 
 Ganjoor documents this static API:
