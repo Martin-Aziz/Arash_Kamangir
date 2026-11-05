@@ -12,11 +12,13 @@ struct PoetryKeepsakeCard: View {
     let verses: [String]
     let appearance: ReaderAppearance
     let fontName: String
+    let template: ManuscriptTemplate
 
     var body: some View {
         VStack(spacing: 30) {
-            ArashMark(color: appearance.ornament)
-                .frame(width: 38, height: 38)
+            PersianIlluminatedHeadpiece(template: template)
+                .frame(height: 176)
+                .padding(.horizontal, 1)
                 .accessibilityHidden(true)
 
             Text("یادگار شعر")
@@ -62,7 +64,7 @@ struct PoetryKeepsakeCard: View {
         .frame(width: 720, height: 900)
         .background(appearance.page)
         .overlay {
-            ManuscriptFrame(color: appearance.ornament)
+            PersianIlluminatedFrame(template: template)
         }
         .foregroundStyle(appearance.foreground)
         .environment(\.layoutDirection, .rightToLeft)
@@ -74,6 +76,7 @@ struct PoetryKeepsakeSheet: View {
     let poetName: String
     let appearance: ReaderAppearance
     let fontName: String
+    let template: ManuscriptTemplate
 
     @Environment(\.dismiss) private var dismiss
     @State private var selectedIndex = 0
@@ -95,7 +98,8 @@ struct PoetryKeepsakeSheet: View {
             poetName: poetName,
             verses: selectedVerses,
             appearance: appearance,
-            fontName: fontName)
+            fontName: fontName,
+            template: template)
     }
 
     var body: some View {
