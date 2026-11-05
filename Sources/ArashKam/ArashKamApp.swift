@@ -24,6 +24,7 @@ struct LibraryWindow: View {
     @State private var showingLibraryManager = false
     @State private var showingBookmarks = false
     @State private var showingReadingSettings = false
+    @State private var showingKeepsake = false
     @State private var isFocusMode = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showingFilesSettings = false
@@ -96,6 +97,15 @@ struct LibraryWindow: View {
         .onAppear {
             ReaderUserFonts.registerExisting()
             refreshFonts()
+        }
+        .sheet(isPresented: $showingKeepsake) {
+            if let poem = model.poem {
+                PoetryKeepsakeSheet(
+                    poem: poem,
+                    poetName: model.selectedPoet?.nickname ?? "شعر",
+                    appearance: readerAppearance,
+                    fontName: readerFontName)
+            }
         }
         .sheet(isPresented: $showingFilesSettings) {
             LibraryFilesSettings(
@@ -175,6 +185,15 @@ struct LibraryWindow: View {
             } label: { Image(systemName: "textformat.size.larger") }
                 .help("Larger Persian text")
              if let poem = model.poem {
+                Button {
+                    showingKeepsake = true
+                } label: {
+                    Image(systemName: "sparkles")
+                }
+                .help("Make an illuminated couplet keepsake")
+                .accessibilityLabel("Create poetry keepsake")
+                .accessibilityIdentifier("create-poetry-keepsake")
+
                 Button {
                     model.toggleBookmark()
                 } label: {
@@ -425,16 +444,8 @@ struct LibraryWindow: View {
                     contentWidth: readerContentWidth)
                     .id(poem.fullURL)
 
-                Button {
-                    showingReadingSettings = true
-                } label: {
-                    Label("Style", systemImage: "paintpalette")
-                        .font(.subheadline.weight(.medium))
-                }
-                .buttonStyle(.plain)
-                .modifier(ReaderGlassChrome())
-                .help("Change poetry fonts, colors and page ornament")
-                .padding(20)
+                // Appearance controls are in the trailing inspector/toolbar,
+                // never as a floating button over the final lines of poetry.
             } else if model.isLoading {
                 VStack(spacing: 12) {
                     ProgressView {
