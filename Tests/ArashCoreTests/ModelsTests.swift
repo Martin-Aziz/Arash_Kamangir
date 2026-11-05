@@ -84,6 +84,32 @@ final class ModelsTests: XCTestCase {
         }
     }
 
+    func testDeletionRejectsSymlinkedPoetDirectoryParent() async throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let archive = temp.appendingPathComponent("archive")
+        let outside = temp.appendingPathComponent("outside")
+        try FileManager.default.createDirectory(at: archive, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: outside.appendingPathComponent("hafez"),
+            withIntermediateDirectories: true)
+        let protectedFile = outside.appendingPathComponent("hafez/poem.json")
+        try Data("keep".utf8).write(to: protectedFile)
+        try FileManager.default.createSymbolicLink(
+            at: archive.appendingPathComponent("poets"),
+            withDestinationURL: outside)
+
+        let disk = GanjoorDiskLibrary(root: archive)
+        do {
+            try await disk.removeOfflinePoet("hafez")
+            XCTFail("Removal followed the symlinked poets directory.")
+        } catch {
+            XCTAssertTrue(error is ArchivePathError)
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: protectedFile.path))
+    }
+
     func testOfflineStorageAndCompletionMarker() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: temp) }
