@@ -136,10 +136,10 @@ struct IlluminatedReaderView: View {
             .environment(\.layoutDirection, .rightToLeft)
             .frame(maxWidth: .infinity)
         } else {
-            VStack(alignment: .trailing, spacing: 8) {
+            VStack(alignment: .center, spacing: 8) {
                 verseText(verses[0].text)
                 verseText(verses[1].text)
-                    .padding(.trailing, 22)
+                    .padding(.horizontal, 11)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .environment(\.layoutDirection, .rightToLeft)
@@ -149,9 +149,9 @@ struct IlluminatedReaderView: View {
     private func verseText(_ value: String) -> some View {
         Text(value)
             .font(ReaderFontCatalog.font(fontName, size: CGFloat(fontSize)))
-            .multilineTextAlignment(.trailing)
+            .multilineTextAlignment(.center)
             .lineSpacing(lineSpacing)
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .frame(maxWidth: .infinity, alignment: .center)
             .textSelection(.enabled)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityLabel(value)

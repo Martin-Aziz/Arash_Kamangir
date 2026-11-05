@@ -148,4 +148,6 @@ Then verify:
   reproducible for the user and kept out of the live text layer.
 - PDF, EPUB and legacy .s3db import are separate milestones (#12/#4).
 - Babataher complete-poet download blocked by upstream HTTP 403 (#10).
-- This PR has **not** been compiled or rendered on the user's Mac yet.
+- Native macOS builds and screenshot QA were performed on 2026-11-05; see
+  [evidence and remaining deviations](qa/manuscript/README.md). Reference-fidelity
+  acceptance remains pending the original supplied reference/concept files.
