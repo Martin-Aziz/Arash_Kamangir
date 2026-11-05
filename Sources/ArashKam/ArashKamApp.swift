@@ -24,6 +24,7 @@ struct LibraryWindow: View {
     @State private var showingLibraryManager = false
     @State private var showingBookmarks = false
     @State private var showingReadingSettings = false
+    @State private var splitVisibility: NavigationSplitViewVisibility = .all
     @State private var showingFilesSettings = false
     @State private var fontQuery = ""
     @State private var installedPersianFonts: [ReaderFontChoice] = []
@@ -72,7 +73,7 @@ struct LibraryWindow: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $splitVisibility) {
             sidebar
                 .navigationSplitViewColumnWidth(min: 210, ideal: 245, max: 350)
         } content: {
@@ -91,6 +92,16 @@ struct LibraryWindow: View {
                         .popover(isPresented: $showingReadingSettings, arrowEdge: .bottom) {
                             readingSettings
                         }
+
+                        Button {
+                            splitVisibility = splitVisibility == .detailOnly ? .all : .detailOnly
+                        } label: {
+                            Image(systemName: splitVisibility == .detailOnly ?
+                                  "sidebar.left" : "book.closed")
+                        }
+                        .help(splitVisibility == .detailOnly ?
+                              "Show library columns" : "Focus on the poem")
+                        .accessibilityIdentifier("toggle-poetry-focus")
 
                         Button {
                             showingFilesSettings = true
