@@ -2,6 +2,7 @@
 import AppKit
 import CoreText
 import Foundation
+import ArashCore
 
 enum ReaderFontImportError: LocalizedError {
     case unsupported
@@ -29,10 +30,8 @@ enum ReaderUserFonts {
         let support = applicationSupport ??
             FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let identity = bundleID ?? Bundle.main.bundleIdentifier
-        let folder = identity == GanjoorLibraryLocation.qaBundleID ? "ArashKamQA" : "ArashKam"
-        return support
-            .appendingPathComponent(folder, isDirectory: true)
-            .appendingPathComponent("ImportedFonts", isDirectory: true)
+        return GanjoorLibraryLocation.userFontRoot(
+            applicationSupport: support, bundleID: identity)
     }
 
     static func registerExisting() {
