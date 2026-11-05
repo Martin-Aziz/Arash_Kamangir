@@ -3,6 +3,13 @@ import Foundation
 import SwiftUI
 import ArashCore
 
+struct SavedPoem: Identifiable {
+    let fullURL: String
+    let title: String
+    let poetName: String
+    var id: String { fullURL }
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     @Published private(set) var poets: [GanjoorPoet] = []
@@ -16,6 +23,9 @@ final class AppModel: ObservableObject {
     @Published private(set) var downloadTotal = 0
     @Published private(set) var downloadMessage = ""
     @Published private(set) var bookmarks: Set<String>
+    @Published private(set) var savedPoems: [SavedPoem] = []
+    @Published private(set) var offlineRecords: [OfflinePoetRecord] = []
+    @Published private(set) var isRemovingOfflinePoet = false
     @Published var errorMessage: String?
 
     private let client = GanjoorClient()
@@ -37,10 +47,9 @@ final class AppModel: ObservableObject {
         if let cached: GanjoorManifest = try? await library.load("manifest.json", as: GanjoorManifest.self) {
             poets = cached.poets
         }
-        if let saved = try? await library.importedPoetSlugs() {
-            importedPoets = saved
-        }
+        await refreshOfflineLibrary()
         await refreshCatalog(showError: poets.isEmpty)
+        await refreshBookmarks()
     }
 
     func refreshCatalog(showError: Bool = true) async {
@@ -122,7 +131,7 @@ final class AppModel: ObservableObject {
                         self?.downloadMessage = "Saving \(completed) / \(total) poems"
                     }
                 }
-            importedPoets = try await library.importedPoetSlugs()
+            await refreshOfflineLibrary()
             downloadMessage = "Offline download complete."
         } catch is CancellationError {
             downloadMessage = "Download stopped. Already downloaded files are kept."
@@ -132,12 +141,89 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func refreshOfflineLibrary() async {
+        do {
+            let records = try await library.offlinePoetRecords()
+            offlineRecords = records
+            importedPoets = Set(records.map(\.slug))
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func removeOfflinePoet(_ slug: String) async {
+        // Avoid racing a download with deletion of the same directory.
+        guard !isDownloading, !isRemovingOfflinePoet else { return }
+        isRemovingOfflinePoet = true
+        defer { isRemovingOfflinePoet = false }
+        do {
+            try await library.removeOfflinePoet(slug)
+            await refreshOfflineLibrary()
+            if selectedPoet?.slug == slug {
+                downloadMessage = "Local copy removed. Online reading is still available."
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func refreshBookmarks() async {
+        var records: [SavedPoem] = []
+        for fullURL in bookmarks.sorted() {
+            guard let segments = try? GanjoorPath.segments(fullURL),
+                  segments.count >= 2,
+                  let relative = try? GanjoorPath.poem(fullURL) else { continue }
+            let cached: GanjoorPoem? = try? await library.load(relative, as: GanjoorPoem.self)
+            let poetName = poets.first(where: { $0.slug == segments[0] })?.nickname ?? segments[0]
+            records.append(SavedPoem(
+                fullURL: fullURL,
+                title: cached?.title ?? segments.last ?? fullURL,
+                poetName: poetName
+            ))
+        }
+        savedPoems = records
+    }
+
+    func openSavedPoem(_ fullURL: String) async {
+        guard !isLoading else { return }
+        guard let segments = try? GanjoorPath.segments(fullURL),
+              segments.count >= 2,
+              let poet = poets.first(where: { $0.slug == segments[0] }) else {
+            errorMessage = "This bookmark has an invalid or unavailable poet."
+            return
+        }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let next: GanjoorPoem = try await cachedOrRemote(
+                GanjoorPath.poem(fullURL), as: GanjoorPoem.self)
+            guard next.fullURL == fullURL else { throw GanjoorClientError.invalidData }
+            let parentURL = "/" + segments.dropLast().joined(separator: "/")
+            let parent: GanjoorCategory = try await cachedOrRemote(
+                GanjoorPath.category(parentURL), as: GanjoorCategory.self)
+            guard parent.fullURL == parentURL else { throw GanjoorClientError.invalidData }
+            selectedPoet = poet
+            category = parent
+            history = []
+            poem = next
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func removeBookmark(_ fullURL: String) {
+        bookmarks.remove(fullURL)
+        UserDefaults.standard.set(bookmarks.sorted(), forKey: "bookmarkedPoems")
+        Task { await refreshBookmarks() }
+    }
+
     func toggleBookmark() {
         guard let poem else { return }
         if !bookmarks.insert(poem.fullURL).inserted {
             bookmarks.remove(poem.fullURL)
         }
         UserDefaults.standard.set(bookmarks.sorted(), forKey: "bookmarkedPoems")
+        Task { await refreshBookmarks() }
     }
 
     private func cachedOrRemote<T: Decodable>(_ path: String, as type: T.Type) async throws -> T {

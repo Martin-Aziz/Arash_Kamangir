@@ -19,10 +19,24 @@ struct LibraryWindow: View {
     @State private var poetSearch = ""
     @State private var contentSearch = ""
     @State private var downloadTask: Task<Void, Never>?
+    @State private var downloadedOnly = false
+    @State private var showingLibraryManager = false
+    @State private var showingBookmarks = false
+    @State private var showingReadingSettings = false
     @AppStorage("readerFontSize") private var fontSize = 24.0
+    @AppStorage("readerLineSpacing") private var lineSpacing = 5.0
+    @AppStorage("readerContentWidth") private var readerContentWidth = 820.0
+    @AppStorage("readerTheme") private var readerTheme = ReaderAppearance.system.rawValue
+
+    private var readerAppearance: ReaderAppearance {
+        ReaderAppearance(rawValue: readerTheme) ?? .system
+    }
 
     private var visiblePoets: [GanjoorPoet] {
-        model.poets.filter { PersianNormalizer.contains($0.nickname, query: poetSearch) }
+        model.poets.filter {
+            (!downloadedOnly || model.importedPoets.contains($0.slug))
+                && PersianNormalizer.contains($0.nickname, query: poetSearch)
+        }
     }
     private var visibleCategories: [GanjoorEntry] {
         (model.category?.childCategories ?? []).filter {
@@ -46,6 +60,16 @@ struct LibraryWindow: View {
             reader
                 .toolbar {
                     ToolbarItemGroup(placement: .primaryAction) {
+                        Button {
+                            showingReadingSettings.toggle()
+                        } label: {
+                            Image(systemName: "slider.horizontal.3")
+                        }
+                        .help("Reading preferences")
+                        .popover(isPresented: $showingReadingSettings, arrowEdge: .bottom) {
+                            readingSettings
+                        }
+
                         Button {
                             fontSize = max(17, fontSize - 2)
                         } label: { Image(systemName: "textformat.size.smaller") }
@@ -76,6 +100,12 @@ struct LibraryWindow: View {
         }
         .navigationTitle("آرش کمانگیر")
         .task { await model.bootstrap() }
+        .sheet(isPresented: $showingLibraryManager) {
+            LibraryManagerView(model: model)
+        }
+        .sheet(isPresented: $showingBookmarks) {
+            BookmarksView(model: model)
+        }
         .alert("Arash Kamangir", isPresented: Binding(
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
@@ -112,7 +142,15 @@ struct LibraryWindow: View {
             TextField("Find a poet · جستجوی شاعر", text: $poetSearch)
                 .textFieldStyle(.roundedBorder)
                 .padding(.horizontal, 12)
-                .padding(.bottom, 10)
+                .padding(.bottom, 7)
+
+            Toggle(isOn: $downloadedOnly) {
+                Label("Downloaded only", systemImage: "arrow.down.circle")
+                    .font(.caption)
+            }
+            .toggleStyle(.checkbox)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 10)
 
             List {
                 Section("Poets · شاعران") {
@@ -147,6 +185,21 @@ struct LibraryWindow: View {
                 Text("\(model.importedPoets.count) poets downloaded for offline reading")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Button {
+                    showingBookmarks = true
+                } label: {
+                    Label("Saved poetry (\(model.bookmarks.count))", systemImage: "bookmark")
+                }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button {
+                    showingLibraryManager = true
+                } label: {
+                    Label("Manage offline library", systemImage: "externaldrive")
+                }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 Link("Source: Ganjoor", destination: URL(string: "https://ganjoor.net")!)
                     .font(.caption)
             }
@@ -281,7 +334,7 @@ struct LibraryWindow: View {
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
                         Divider()
-                        VStack(spacing: 20) {
+                        VStack(spacing: 20 + lineSpacing) {
                             ForEach(poem.readingGroups) { group in
                                 if group.verses.count == 2 &&
                                     group.verses[0].position == "Right" &&
@@ -305,7 +358,7 @@ struct LibraryWindow: View {
                                 .padding(.top, 18)
                         }
                     }
-                    .frame(maxWidth: 820)
+                    .frame(maxWidth: readerContentWidth)
                     .padding(.horizontal, 36)
                     .padding(.vertical, 44)
                     .frame(maxWidth: .infinity)
@@ -319,13 +372,60 @@ struct LibraryWindow: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .textBackgroundColor))
+        .background(readerAppearance.background)
+        .foregroundStyle(readerAppearance.foreground)
+        .tint(readerAppearance.linkTint)
+    }
+
+    private var readingSettings: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            HStack {
+                Text("Reading preferences")
+                    .font(.headline)
+                Spacer()
+                Button("Reset") {
+                    readerTheme = ReaderAppearance.system.rawValue
+                    fontSize = 24
+                    lineSpacing = 5
+                    readerContentWidth = 820
+                }
+                .font(.caption)
+            }
+            Picker("Theme", selection: $readerTheme) {
+                ForEach(ReaderAppearance.allCases) { appearance in
+                    Text(appearance.title).tag(appearance.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Text size: \(Int(fontSize)) pt")
+                    .font(.subheadline)
+                Slider(value: $fontSize, in: 17...42, step: 1)
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Verse spacing")
+                    .font(.subheadline)
+                Slider(value: $lineSpacing, in: 0...20, step: 1)
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Reading width")
+                    .font(.subheadline)
+                Slider(value: $readerContentWidth, in: 620...960, step: 20)
+            }
+            Text("These settings are saved on this Mac.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(18)
+        .frame(width: 320)
     }
 
     private func verseText(_ value: String) -> some View {
         Text(value)
             .font(.system(size: fontSize, design: .serif))
             .multilineTextAlignment(.trailing)
+            .lineSpacing(lineSpacing)
             .frame(maxWidth: .infinity, alignment: .trailing)
             .textSelection(.enabled)
             .fixedSize(horizontal: false, vertical: true)

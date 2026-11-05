@@ -25,8 +25,9 @@
 - [ ] SQLite+FTS5 with normalized search terms and incremental indexing
 - [ ] Search poems by verse text, poet and category
 - [ ] Display download size and estimated poem count before download
-- [ ] Manage downloaded poets: remove, retry, repair, verify, update
-- [ ] Dedicated offline-only browsing filter
+- [x] Manage completed downloads: list, disk usage, explicit confirmed removal
+- [ ] Remaining management: retry, repair, verify, update and partial-cache cleanup
+- [x] Dedicated offline-only browsing filter
 - [ ] Database integrity and migration tests
 - [ ] Download concurrency/backoff limits for 429/5xx
 - [ ] Cancel / resume UI integration tests
@@ -41,8 +42,9 @@
 ## P4 — Reader quality
 
 - [ ] Better typography with explicit font fallback and bidi layout tests
-- [ ] Adjustable themes, line spacing, font and window layout
-- [ ] Favorites navigation and reading history
+- [x] Adjustable reading themes, verse spacing, font and reading width
+- [x] Saved Poetry view with bookmark navigation, filtering and removal
+- [ ] Reading history, full accessibility pass and typography refinements
 - [ ] Audio recitations where usage rights permit
 - [ ] Notes and tags, fully local until opt-in sync
 

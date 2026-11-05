@@ -40,6 +40,76 @@ final class ModelsTests: XCTestCase {
         XCTAssertTrue(PersianNormalizer.contains("زِ یـار", query: "ز یار"))
     }
 
+
+    func testOfflineInventoryAndSafeDeletion() async throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let disk = GanjoorDiskLibrary(root: temp)
+
+        try await disk.save(Data("hafez".utf8), at: "poets/hafez/poet.json")
+        try await disk.save(Data("poem".utf8), at: "poets/hafez/ghazal/sh1.json")
+        try await disk.save(Data("saadi".utf8), at: "poets/saadi/poet.json")
+        try await disk.save(Data("partial".utf8), at: "poets/rumi/poet.json")
+        try await disk.markImported("hafez")
+        try await disk.markImported("saadi")
+
+        let records = try await disk.offlinePoetRecords()
+        XCTAssertEqual(records.map(\.slug), ["hafez", "saadi"])
+        XCTAssertEqual(records.first?.fileCount, 2)
+        XCTAssertEqual(records.first?.bytes, 9)
+
+        try await disk.removeOfflinePoet("hafez")
+        // A second removal is safe if the first already completed.
+        try await disk.removeOfflinePoet("hafez")
+        let removed = try await disk.exists("poets/hafez/poet.json")
+        let other = try await disk.exists("poets/saadi/poet.json")
+        let partial = try await disk.exists("poets/rumi/poet.json")
+        XCTAssertFalse(removed)
+        XCTAssertTrue(other)
+        XCTAssertTrue(partial)
+        let remaining = try await disk.offlinePoetRecords()
+        XCTAssertEqual(remaining.map(\.slug), ["saadi"])
+    }
+
+    func testRejectsUnsafeDeletionSlug() async throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let disk = GanjoorDiskLibrary(root: temp)
+        for invalid in ["../elsewhere", "a/b", "", "..", "x\\y"] {
+            do {
+                try await disk.removeOfflinePoet(invalid)
+                XCTFail("Unsafe slug was accepted: \(invalid)")
+            } catch {
+                XCTAssertTrue(error is ArchivePathError)
+            }
+        }
+    }
+
+    func testDeletionRejectsSymlinkedPoetDirectoryParent() async throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let archive = temp.appendingPathComponent("archive")
+        let outside = temp.appendingPathComponent("outside")
+        try FileManager.default.createDirectory(at: archive, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: outside.appendingPathComponent("hafez"),
+            withIntermediateDirectories: true)
+        let protectedFile = outside.appendingPathComponent("hafez/poem.json")
+        try Data("keep".utf8).write(to: protectedFile)
+        try FileManager.default.createSymbolicLink(
+            at: archive.appendingPathComponent("poets"),
+            withDestinationURL: outside)
+
+        let disk = GanjoorDiskLibrary(root: archive)
+        do {
+            try await disk.removeOfflinePoet("hafez")
+            XCTFail("Removal followed the symlinked poets directory.")
+        } catch {
+            XCTAssertTrue(error is ArchivePathError)
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: protectedFile.path))
+    }
+
     func testOfflineStorageAndCompletionMarker() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: temp) }
