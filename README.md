@@ -25,6 +25,31 @@ The download button downloads a **complete selected poet**: poet profile, catego
 
 **Still pending:** SQLite/FTS5 full-text search, partial-download cache cleanup/repair, .s3db import, notarized DMG, VoiceOver/UI automation and physical Mac verification. These additions have not been certified on macOS yet. Use [the local Mac QA checklist](docs/LOCAL_MAC_QA.md) before distribution.
 
+## Persian Manuscript Template Studio (new draft)
+
+The manuscript style is no longer just a thin border. New optional
+**Royal Lapis**, **Shiraz Garden**, and **Moonlit Divan** templates use
+original SwiftUI Canvas artwork with a layered sar-lawh (سرلوح),
+floral tash'ir margins, gold/blue/rose/green filigree and corner rosettes.
+Choose them in the appearance inspector under **Manuscript edition**.
+The selection is stored independently from page color and font.
+
+These templates are implemented as **ornament layers around real Persian
+text**, so the poem can still be selected, copied, bookmarked, read with
+VoiceOver and reflow at narrow widths. The same choice appears in the
+Keepsake Studio. Quiet remains an undecorated alternative.
+
+An editable handoff package is included under `assets/templates/`:
+three SVG headpieces and `template-tokens.json`. They are **design
+assets**, not raster screenshots or live app dependencies. Inspect
+`docs/MANUSCRIPT_TEMPLATE_STUDIO.md` and run:
+
+    python3 scripts/check-manuscript-design.py
+
+Before merging, macOS 27.2 GUI QA must show the templates visibly match
+the user's richly illustrated references, with no text clipping. This
+branch is **not yet locally Mac-certified**.
+
 ## The Living Divan — Focus & Keepsake Studio (new draft)
 
 The next immersive reading milestone is developed separately on
