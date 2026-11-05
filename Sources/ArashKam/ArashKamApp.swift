@@ -169,6 +169,9 @@ struct LibraryWindow: View {
             .help(isFocusMode ?
                   "Show library columns" : "Focus on the poem")
             .accessibilityIdentifier("toggle-poetry-focus")
+            .accessibilityLabel(isFocusMode ?
+                "Return to library" : "Focus on the poem")
+            .keyboardShortcut("f", modifiers: [.command, .shift])
              Button {
                 showingFilesSettings = true
             } label: {
@@ -193,6 +196,7 @@ struct LibraryWindow: View {
                 .help("Make an illuminated couplet keepsake")
                 .accessibilityLabel("Create poetry keepsake")
                 .accessibilityIdentifier("create-poetry-keepsake")
+                .keyboardShortcut("k", modifiers: [.command, .shift])
 
                 Button {
                     model.toggleBookmark()
@@ -624,7 +628,8 @@ struct LibraryWindow: View {
             }
             .padding(20)
         }
-        .frame(width: 430, height: 610)
+        .frame(minWidth: 310, idealWidth: 365, maxWidth: 400,
+               minHeight: 430, idealHeight: 610)
     }
 
     private func importLocalFont() {
