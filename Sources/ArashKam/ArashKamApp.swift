@@ -6,7 +6,10 @@ import ArashCore
 @main
 struct ArashKamApp: App {
     var body: some Scene {
-        WindowGroup("آرش کمانگیر") {
+        WindowGroup(
+            Bundle.main.bundleIdentifier == GanjoorLibraryLocation.qaBundleID
+                ? "آرش کمانگیر — QA" : "آرش کمانگیر"
+        ) {
             LibraryWindow()
                 .frame(minWidth: 920, minHeight: 600)
         }
@@ -127,6 +130,12 @@ struct LibraryWindow: View {
                     Text("Persian Poetry Library")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                    if Bundle.main.bundleIdentifier == GanjoorLibraryLocation.qaBundleID {
+                        Label("QA build · Isolated data", systemImage: "checkmark.shield")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                            .accessibilityIdentifier("qa-isolated-bundle")
+                    }
                 }
                 Spacer()
                 Button {
@@ -190,6 +199,7 @@ struct LibraryWindow: View {
                 } label: {
                     Label("Saved poetry (\(model.bookmarks.count))", systemImage: "bookmark")
                 }
+                .accessibilityIdentifier("open-saved-poetry")
                 .buttonStyle(.bordered)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -198,6 +208,7 @@ struct LibraryWindow: View {
                 } label: {
                     Label("Manage offline library", systemImage: "externaldrive")
                 }
+                .accessibilityIdentifier("open-offline-library")
                 .buttonStyle(.bordered)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Link("Source: Ganjoor", destination: URL(string: "https://ganjoor.net")!)
@@ -319,6 +330,7 @@ struct LibraryWindow: View {
                                   systemImage: "square.and.arrow.down")
                         }
                         .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier("download-selected-poet")
                         .disabled(model.selectedPoet == nil)
                         if !model.downloadMessage.isEmpty {
                             Text(model.downloadMessage)
@@ -422,6 +434,7 @@ struct LibraryWindow: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier("reader-theme-picker")
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Text size: \(Int(fontSize)) pt")
