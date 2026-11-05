@@ -3,6 +3,18 @@ import XCTest
 @testable import ArashCore
 
 final class ModelsTests: XCTestCase {
+    func testReaderPageFitsNarrowInspectorViewport() {
+        for viewport in [20.0, 200, 279, 480, 920, 1600] {
+            for illuminated in [false, true] {
+                let layout = ReaderPageLayout(viewportWidth: viewport, preferredWidth: 820,
+                                              illuminated: illuminated)
+                XCTAssertLessThanOrEqual(layout.pageWidth + 2 * layout.outerPadding, viewport)
+                XCTAssertLessThanOrEqual(2 * layout.innerPadding, layout.pageWidth)
+            }
+        }
+        XCTAssertEqual(ReaderPageLayout(viewportWidth: 1600, preferredWidth: 820,
+                                        illuminated: true).pageWidth, 820)
+    }
     func testDownloadCancellationRecognizesSwiftAndURLSessionCancellation() {
         XCTAssertTrue(GanjoorCancellation.isCancellation(CancellationError()))
         XCTAssertTrue(GanjoorCancellation.isCancellation(URLError(.cancelled)))
