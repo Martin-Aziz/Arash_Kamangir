@@ -1,6 +1,7 @@
 #if os(macOS)
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 import ArashCore
 
 @main
@@ -23,10 +24,31 @@ struct LibraryWindow: View {
     @State private var showingLibraryManager = false
     @State private var showingBookmarks = false
     @State private var showingReadingSettings = false
+    @State private var showingFilesSettings = false
+    @State private var fontQuery = ""
+    @State private var installedPersianFonts: [ReaderFontChoice] = []
+    @AppStorage("readerFontPostScriptName") private var readerFontName = ""
+    @AppStorage("readerPageStyle") private var readerPageStyle = ReaderPageStyle.illuminated.rawValue
     @AppStorage("readerFontSize") private var fontSize = 24.0
     @AppStorage("readerLineSpacing") private var lineSpacing = 5.0
     @AppStorage("readerContentWidth") private var readerContentWidth = 820.0
-    @AppStorage("readerTheme") private var readerTheme = ReaderAppearance.system.rawValue
+    @AppStorage("readerTheme") private var readerTheme = ReaderAppearance.paper.rawValue
+
+    private var pageStyle: ReaderPageStyle {
+        ReaderPageStyle(rawValue: readerPageStyle) ?? .illuminated
+    }
+
+    private var matchingFonts: [ReaderFontChoice] {
+        guard !fontQuery.isEmpty else { return installedPersianFonts }
+        return installedPersianFonts.filter {
+            $0.label.localizedCaseInsensitiveContains(fontQuery) ||
+            $0.name.localizedCaseInsensitiveContains(fontQuery)
+        }
+    }
+
+    private func refreshFonts() {
+        installedPersianFonts = ReaderFontCatalog.available()
+    }
 
     private var readerAppearance: ReaderAppearance {
         ReaderAppearance(rawValue: readerTheme) ?? .system
@@ -65,10 +87,18 @@ struct LibraryWindow: View {
                         } label: {
                             Image(systemName: "slider.horizontal.3")
                         }
-                        .help("Reading preferences")
+                        .help("Poetry appearance and fonts")
                         .popover(isPresented: $showingReadingSettings, arrowEdge: .bottom) {
                             readingSettings
                         }
+
+                        Button {
+                            showingFilesSettings = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
+                        .help("Library, import and export")
+                        .accessibilityIdentifier("open-library-files-settings")
 
                         Button {
                             fontSize = max(17, fontSize - 2)
@@ -100,6 +130,16 @@ struct LibraryWindow: View {
         }
         .navigationTitle("آرش کمانگیر")
         .task { await model.bootstrap() }
+        .onAppear(perform: refreshFonts)
+        .sheet(isPresented: $showingFilesSettings) {
+            LibraryFilesSettings(
+                model: model,
+                startDownload: {
+                    downloadTask = Task { await model.downloadCurrentPoet() }
+                },
+                stopDownload: { downloadTask?.cancel() },
+                exportCurrentPoem: exportCurrentPoem)
+        }
         .sheet(isPresented: $showingLibraryManager) {
             LibraryManagerView(model: model)
         }
@@ -119,9 +159,9 @@ struct LibraryWindow: View {
     private var sidebar: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Image(systemName: "books.vertical.fill")
-                    .font(.title2)
-                    .foregroundStyle(.tint)
+                ArashMark(color: readerAppearance.ornament)
+                    .frame(width: 30, height: 30)
+                    .help("Arash the Archer · آرش کمانگیر")
                 VStack(alignment: .leading, spacing: 1) {
                     Text("آرش کمانگیر").font(.headline)
                     Text("Persian Poetry Library")
