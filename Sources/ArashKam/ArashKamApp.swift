@@ -337,14 +337,22 @@ struct LibraryWindow: View {
                 Divider()
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Offline library").font(.subheadline.weight(.semibold))
+                        Text("Library · کتابخانه")
+                            .font(.subheadline.weight(.semibold))
                         Spacer()
                         if model.hasSelectedPoetOffline {
-                            Label("Downloaded", systemImage: "checkmark.circle")
+                            Label("Offline", systemImage: "checkmark.circle")
                                 .font(.caption)
                                 .foregroundStyle(.green)
                         }
                     }
+                    Button {
+                        showingFilesSettings = true
+                    } label: {
+                        Label("Library & file settings", systemImage: "gearshape.2")
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("open-library-files-settings-from-collection")
                     if model.isDownloading {
                         if model.downloadTotal > 0 {
                             ProgressView(value: Double(model.downloadDone),
@@ -352,28 +360,11 @@ struct LibraryWindow: View {
                         } else {
                             ProgressView()
                         }
+                    }
+                    if !model.downloadMessage.isEmpty {
                         Text(model.downloadMessage)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Button("Stop download", role: .cancel) {
-                            downloadTask?.cancel()
-                        }
-                        .buttonStyle(.bordered)
-                    } else {
-                        Button {
-                            downloadTask = Task { await model.downloadCurrentPoet() }
-                        } label: {
-                            Label(model.hasSelectedPoetOffline ? "Refresh offline poet" : "Download poet",
-                                  systemImage: "square.and.arrow.down")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .accessibilityIdentifier("download-selected-poet")
-                        .disabled(model.selectedPoet == nil)
-                        if !model.downloadMessage.isEmpty {
-                            Text(model.downloadMessage)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
                     }
                 }
                 .padding(13)
