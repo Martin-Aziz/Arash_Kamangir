@@ -24,7 +24,9 @@ struct LibraryWindow: View {
     @State private var showingLibraryManager = false
     @State private var showingBookmarks = false
     @State private var showingReadingSettings = false
-    @State private var splitVisibility: NavigationSplitViewVisibility = .all
+    @State private var showingKeepsake = false
+    @State private var isFocusMode = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showingFilesSettings = false
     @State private var fontQuery = ""
     @State private var fontImportNotice = ""
@@ -74,77 +76,66 @@ struct LibraryWindow: View {
     }
 
     var body: some View {
-        NavigationSplitView(columnVisibility: $splitVisibility) {
-            sidebar
-                .navigationSplitViewColumnWidth(min: 210, ideal: 245, max: 350)
-        } content: {
-            collection
-                .navigationSplitViewColumnWidth(min: 245, ideal: 310, max: 450)
-        } detail: {
-            reader
-                .toolbar {
-                    ToolbarItemGroup(placement: .primaryAction) {
+        Group {
+            if isFocusMode {
+                VStack(spacing: 0) {
+                    HStack(spacing: 14) {
                         Button {
-                            showingReadingSettings.toggle()
-                        } label: {
-                            Image(systemName: "slider.horizontal.3")
-                        }
-                        .help("Poetry appearance and fonts")
-                        .popover(isPresented: $showingReadingSettings, arrowEdge: .bottom) {
-                            readingSettings
-                        }
-
-                        Button {
-                            splitVisibility = splitVisibility == .detailOnly ? .all : .detailOnly
-                        } label: {
-                            Image(systemName: splitVisibility == .detailOnly ?
-                                  "sidebar.left" : "book.closed")
-                        }
-                        .help(splitVisibility == .detailOnly ?
-                              "Show library columns" : "Focus on the poem")
-                        .accessibilityIdentifier("toggle-poetry-focus")
-
-                        Button {
-                            showingFilesSettings = true
-                        } label: {
-                            Image(systemName: "gearshape")
-                        }
-                        .help("Library, import and export")
-                        .accessibilityIdentifier("open-library-files-settings")
-
-                        Button {
-                            fontSize = max(17, fontSize - 2)
-                        } label: { Image(systemName: "textformat.size.smaller") }
-                            .help("Smaller Persian text")
-
-                        Button {
-                            fontSize = min(42, fontSize + 2)
-                        } label: { Image(systemName: "textformat.size.larger") }
-                            .help("Larger Persian text")
-
-                        if let poem = model.poem {
-                            Button {
-                                model.toggleBookmark()
-                            } label: {
-                                Image(systemName: model.bookmarks.contains(poem.fullURL)
-                                      ? "bookmark.fill" : "bookmark")
+                            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.26)) {
+                                isFocusMode = false
                             }
-                            .help("Bookmark this poem")
-
-                            Button {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(poem.plainText, forType: .string)
-                            } label: { Image(systemName: "doc.on.doc") }
-                                .help("Copy poem text")
+                        } label: {
+                            Label("Library", systemImage: "sidebar.left")
                         }
+                        .buttonStyle(.plain)
+                        .modifier(ReaderGlassChrome())
+                        .help("Return to the poet and collection browser")
+                        .keyboardShortcut(.cancelAction)
+                        .accessibilityIdentifier("exit-poetry-focus")
+
+                        Spacer()
+
+                        Text("در خلوت شعر")
+                            .font(ReaderFontCatalog.font(readerFontName, size: 17))
+                            .foregroundStyle(readerAppearance.ornament)
+
+                        Spacer()
                     }
+                    .padding(.horizontal, 18)
+                    .padding(.top, 11)
+                    .padding(.bottom, 8)
+
+                    readerSurface
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(readerAppearance.background)
+                .accessibilityIdentifier("focus-poetry-reader")
+            } else {
+                NavigationSplitView {
+                    sidebar
+                        .navigationSplitViewColumnWidth(min: 210, ideal: 245, max: 350)
+                } content: {
+                    collection
+                        .navigationSplitViewColumnWidth(min: 245, ideal: 310, max: 450)
+                } detail: {
+                    readerSurface
+                }
+            }
         }
         .navigationTitle("آرش کمانگیر")
         .task { await model.bootstrap() }
         .onAppear {
             ReaderUserFonts.registerExisting()
             refreshFonts()
+        }
+        .sheet(isPresented: $showingKeepsake) {
+            if let poem = model.poem {
+                PoetryKeepsakeSheet(
+                    poem: poem,
+                    poetName: model.selectedPoet?.nickname ?? "شعر",
+                    appearance: readerAppearance,
+                    fontName: readerFontName)
+            }
         }
         .sheet(isPresented: $showingFilesSettings) {
             LibraryFilesSettings(
@@ -168,6 +159,88 @@ struct LibraryWindow: View {
             Button("OK") { model.errorMessage = nil }
         } message: {
             Text(model.errorMessage ?? "")
+        }
+    }
+
+    @ViewBuilder
+    private var readerSurface: some View {
+        if #available(macOS 14.0, *) {
+            reader
+                .toolbar { readerToolbar }
+                .inspector(isPresented: $showingReadingSettings) {
+                    readingSettings
+                        .inspectorColumnWidth(min: 330, ideal: 380, max: 420)
+                }
+        } else {
+            reader
+                .toolbar { readerToolbar }
+                .sheet(isPresented: $showingReadingSettings) {
+                    readingSettings
+                }
+        }
+    }
+
+    private var readerToolbar: some ToolbarContent {
+        ToolbarItemGroup(placement: .primaryAction) {
+            Button {
+                showingReadingSettings.toggle()
+            } label: {
+                Image(systemName: "slider.horizontal.3")
+            }
+            .help("Poetry appearance and fonts")
+             Button {
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.26)) {
+                        isFocusMode.toggle()
+                    }
+            } label: {
+                Image(systemName: isFocusMode ?
+                      "sidebar.left" : "book.closed")
+            }
+            .help(isFocusMode ?
+                  "Show library columns" : "Focus on the poem")
+            .accessibilityIdentifier("toggle-poetry-focus")
+            .accessibilityLabel(isFocusMode ?
+                "Return to library" : "Focus on the poem")
+            .keyboardShortcut("f", modifiers: [.command, .shift])
+             Button {
+                showingFilesSettings = true
+            } label: {
+                Image(systemName: "gearshape")
+            }
+            .help("Library, import and export")
+            .accessibilityIdentifier("open-library-files-settings")
+             Button {
+                fontSize = max(17, fontSize - 2)
+            } label: { Image(systemName: "textformat.size.smaller") }
+                .help("Smaller Persian text")
+             Button {
+                fontSize = min(42, fontSize + 2)
+            } label: { Image(systemName: "textformat.size.larger") }
+                .help("Larger Persian text")
+             if let poem = model.poem {
+                Button {
+                    showingKeepsake = true
+                } label: {
+                    Image(systemName: "sparkles")
+                }
+                .help("Make an illuminated couplet keepsake")
+                .accessibilityLabel("Create poetry keepsake")
+                .accessibilityIdentifier("create-poetry-keepsake")
+                .keyboardShortcut("k", modifiers: [.command, .shift])
+
+                Button {
+                    model.toggleBookmark()
+                } label: {
+                    Image(systemName: model.bookmarks.contains(poem.fullURL)
+                          ? "bookmark.fill" : "bookmark")
+                }
+                .help("Bookmark this poem")
+                 Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(poem.plainText, forType: .string)
+                } label: { Image(systemName: "doc.on.doc") }
+                    .help("Copy poem text")
+            }
         }
     }
 
@@ -405,16 +478,8 @@ struct LibraryWindow: View {
                     contentWidth: readerContentWidth)
                     .id(poem.fullURL)
 
-                Button {
-                    showingReadingSettings = true
-                } label: {
-                    Label("Style", systemImage: "paintpalette")
-                        .font(.subheadline.weight(.medium))
-                }
-                .buttonStyle(.plain)
-                .modifier(ReaderGlassChrome())
-                .help("Change poetry fonts, colors and page ornament")
-                .padding(20)
+                // Appearance controls are in the trailing inspector/toolbar,
+                // never as a floating button over the final lines of poetry.
             } else if model.isLoading {
                 VStack(spacing: 12) {
                     ProgressView {
@@ -593,7 +658,8 @@ struct LibraryWindow: View {
             }
             .padding(20)
         }
-        .frame(width: 430, height: 610)
+        .frame(minWidth: 310, idealWidth: 365, maxWidth: 400,
+               minHeight: 430, idealHeight: 610)
     }
 
     private func importLocalFont() {

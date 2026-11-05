@@ -25,6 +25,32 @@ The download button downloads a **complete selected poet**: poet profile, catego
 
 **Still pending:** SQLite/FTS5 full-text search, partial-download cache cleanup/repair, .s3db import, notarized DMG, VoiceOver/UI automation and physical Mac verification. These additions have not been certified on macOS yet. Use [the local Mac QA checklist](docs/LOCAL_MAC_QA.md) before distribution.
 
+## The Living Divan — Focus & Keepsake Studio (new draft)
+
+The next immersive reading milestone is developed separately on
+`fix/poetry-focus-studio-experience`. It responds to macOS QA evidence that
+the old Focus toolbar changed state without hiding both leading columns.
+
+- **Real Focus Mode:** a dedicated full-width reader, rather than relying on
+  macOS's partially honored `NavigationSplitViewVisibility`. Toggle with
+  **Command–Shift–F**, preserving poem selection and bookmark state.
+- **Non-obscuring appearance inspector:** adjustable Persian fonts/palettes
+  in the trailing macOS inspector (macOS 14+) or a fallback sheet on 13.
+  The old floating Style control no longer overlaps the poem.
+- **Responsive page:** typography responds to actual reader width instead
+  of forcing a minimum 480px text area into a narrow split pane. A short
+  opening transition respects macOS Reduce Motion.
+- **Poetry Keepsake Studio:** choose an original poem group and generate a
+  local 2× PNG card with original illuminated borders, selected palette and
+  local Persian font. Preserve poet, poem title and exact Ganjoor URL.
+  **Command–Shift–K** from a loaded poem. Nothing is uploaded or AI-generated.
+
+See the [Living Divan design research and phased AI strategy](docs/LIVING_DIVAN_VISION.md)
+and [Mac QA checklist](docs/LOCAL_MAC_QA.md). These additions are **not yet
+compiled or visually certified on macOS**. There is no released AI model or
+PDF/EPUB importer. AI features will be source-grounded, optional and
+language-gated rather than invented or silently cloud-connected.
+
 ## Illuminated reader redesign — draft, pending Mac QA
 
 An original, manuscript-inspired reading experience is under review in
