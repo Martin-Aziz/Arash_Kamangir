@@ -2,6 +2,9 @@
 
 This is a substantial improvement over the branch baseline, **not a claim of complete fidelity approval**. The original historical reference uploads and three concept PNGs were not available in this chat, repository, or the project-related image files located during this session. The design contract, editable SVGs, palette tokens, Iranica ornamentation article and Met collection record were available. Comparing directly to the missing concepts remains an acceptance gate.
 
+PR #17 had already merged at 21:23:32 UTC before this QA session started.
+These follow-up changes are reviewed in [draft PR #18](https://github.com/Martin-Aziz/Arash_Kamangir/pull/18); this session did not merge either PR.
+
 ## Visible change
 
 The baseline headpiece left large flat blue spaces between isolated flower stamps. The revised native headpiece fills the field and crown with connected gold tendrils, split leaves, layered blossoms, pearl edging and three intricate floral medallions. Pigment ribbons make the denser flowering side margins visible against ivory. The stacked hemistichs now have an intentional centered book composition. No artwork enters the text layout.
