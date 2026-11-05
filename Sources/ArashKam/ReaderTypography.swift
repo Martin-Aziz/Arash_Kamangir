@@ -33,7 +33,10 @@ enum ReaderFontCatalog {
     ]
 
     static func available() -> [ReaderFontChoice] {
-        let names = NSFontManager.shared.availableFonts
+        // Core Text also sees fonts freshly registered with .process scope,
+        // which NSFontManager's cached list can temporarily omit.
+        let postScriptNames = CTFontManagerCopyAvailablePostScriptNames() as? [String] ?? []
+        let names = Set(NSFontManager.shared.availableFonts).union(postScriptNames)
         return names.filter(supportsPersian)
             .map { name in
                 let font = NSFont(name: name, size: 24)
@@ -54,7 +57,11 @@ enum ReaderFontCatalog {
     }
 
     static func font(_ name: String, size: CGFloat) -> Font {
-        if isAvailable(name) { return .custom(name, fixedSize: size) }
+        // Check full Persian glyph support when listing choices, not on every
+        // individual verse layout during scrolling.
+        if !name.isEmpty && NSFont(name: name, size: size) != nil {
+            return .custom(name, fixedSize: size)
+        }
         return .system(size: size, design: .serif)
     }
 

@@ -84,10 +84,19 @@ public enum GanjoorLibraryLocation {
     public static let qaBundleID = "com.arashkam.reader.qa"
 
     public static func defaultRoot(applicationSupport: URL, bundleID: String?) -> URL {
-        let directory = bundleID == qaBundleID ? "ArashKamQA" : "ArashKam"
-        return applicationSupport
-            .appendingPathComponent(directory, isDirectory: true)
+        applicationSupport
+            .appendingPathComponent(bundleID == qaBundleID ? "ArashKamQA" : "ArashKam",
+                                    isDirectory: true)
             .appendingPathComponent("GanjoorData", isDirectory: true)
+    }
+
+    /// User-imported fonts are local to the chosen app identity, not copied into
+    /// the original Ganjoor cache or exposed to the QA app and production alike.
+    public static func userFontRoot(applicationSupport: URL, bundleID: String?) -> URL {
+        applicationSupport
+            .appendingPathComponent(bundleID == qaBundleID ? "ArashKamQA" : "ArashKam",
+                                    isDirectory: true)
+            .appendingPathComponent("ImportedFonts", isDirectory: true)
     }
 }
 

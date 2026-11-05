@@ -29,7 +29,7 @@ cd "$(dirname "$0")/.."
 swift build -c release --product ArashKam
 BIN_DIR="$(swift build -c release --show-bin-path)"
 APP="$PWD/dist/$APP_BASENAME.app"
-mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/ArashKam" "$APP/Contents/MacOS/ArashKam"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
@@ -39,6 +39,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <key>CFBundleExecutable</key><string>ArashKam</string>
 <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
 <key>CFBundleName</key><string>$APP_BASENAME</string>
+<key>CFBundleIconFile</key><string>AppIcon.icns</string>
 <key>CFBundleDisplayName</key><string>$DISPLAY_NAME</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>0.1.0</string>
@@ -47,6 +48,23 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
 PLIST
+
+# Render the original bow-and-arrow brand as a native macOS .icns.
+# Keep intermediates outside the project; iconutil requires an .iconset folder.
+ICON_TEMP="$(mktemp -d)"
+trap 'rm -rf "$ICON_TEMP"' EXIT
+BASE_ICON="$ICON_TEMP/arash-1024.png"
+ICON_SET="$ICON_TEMP/ArashKam.iconset"
+mkdir -p "$ICON_SET"
+swift scripts/create-app-icon.swift "$BASE_ICON"
+for size in 16 32 128 256 512; do
+  sips -z "$size" "$size" "$BASE_ICON" \
+    --out "$ICON_SET/icon_${size}x${size}.png" >/dev/null
+  twice=$((size * 2))
+  sips -z "$twice" "$twice" "$BASE_ICON" \
+    --out "$ICON_SET/icon_${size}x${size}@2x.png" >/dev/null
+done
+iconutil -c icns "$ICON_SET" -o "$APP/Contents/Resources/AppIcon.icns"
 
 codesign --force --sign - "$APP"
 echo "Created $APP ($BUNDLE_ID, ad-hoc signed; not notarized)"

@@ -93,6 +93,19 @@ final class ModelsTests: XCTestCase {
     }
 
 
+    func testReaderFontsAreIsolatedByAppIdentity() {
+        let root = URL(fileURLWithPath: "/tmp/arash-app-support-unit", isDirectory: true)
+        let production = GanjoorLibraryLocation.userFontRoot(
+            applicationSupport: root, bundleID: GanjoorLibraryLocation.productionBundleID)
+        let qa = GanjoorLibraryLocation.userFontRoot(
+            applicationSupport: root, bundleID: GanjoorLibraryLocation.qaBundleID)
+        XCTAssertNotEqual(production.standardizedFileURL, qa.standardizedFileURL)
+        XCTAssertEqual(production.lastPathComponent, "ImportedFonts")
+        XCTAssertEqual(qa.lastPathComponent, "ImportedFonts")
+        XCTAssertEqual(production.deletingLastPathComponent().lastPathComponent, "ArashKam")
+        XCTAssertEqual(qa.deletingLastPathComponent().lastPathComponent, "ArashKamQA")
+    }
+
     func testIsolatedQABundleNeverSharesProductionLibrary() {
         let support = URL(fileURLWithPath: "/tmp/ArashQA-Test-ApplicationSupport", isDirectory: true)
         let production = GanjoorLibraryLocation.defaultRoot(

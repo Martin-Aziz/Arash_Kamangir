@@ -60,6 +60,37 @@ previously opened poem while a different poem is loading.
 This is a **release-blocking** regression test. A successful unit test alone
 does not establish that the GUI action targeted the correct row.
 
+## New reader visual/typography QA (illuminated branch)
+
+1. Open Hafez poem 1 and toggle **Focus on poem**; the two browsing columns
+   should hide, the poem should reflow without clipping, and toggling again
+   restores navigation without losing the selected poem.
+2. Click the floating **Style** control or the toolbar preferences button.
+   Try **System, Ivory, Midnight, Rose, Lapis, Jade**. Verify legibility,
+   icon contrast, the poetic heading and a functional source link.
+3. Switch **Quiet** vs **Illuminated**. Confirm the original floral border
+   does not obscure text, capture clicks or appear as a VoiceOver verse.
+4. Choose at least two installed Persian typefaces, then import a user-owned
+   .ttf/.otf/.ttc through **Add font…**. Confirm typeface preview AND actual
+   poem change. Reopen the app and verify the same font still renders.
+   Test a missing selected font and invalid/unreadable font file. Never
+   commit, redistribute or publish the user's font binary.
+5. Inspect ligatures, diacritics, Persian ی/ک and mixed-script typography
+   with Hafez. Test 17pt and 42pt, long hemistiches and narrow windows.
+6. Open **Library & Files** from the toolbar or collection, then download
+   the selected poet, stop if needed, and verify status. Test **Export
+   current poem…** and inspect the exported UTF-8 text and Ganjoor link.
+   Cancel the save dialog and verify no unexpected file exists.
+7. Confirm the packaged app has a visible bow-and-arrow icon in Finder,
+   and that the QA bundle remains separate from production. Verify
+   Liquid Glass-style controls on macOS 26+; older OS uses native material.
+8. Run a full regression of bookmarks, Hafez sh1/sh2 identity, cached
+   navigation and offline library manager. Incomplete Babataher download
+   with upstream HTTP 403 remains tracked separately in issue #10.
+
+This branch is not Mac-certified until all applicable checks pass. Record
+explicit PASS/FAIL/BLOCKED, screenshots, warnings and source paths.
+
 ## Functional checks
 
 1. **Navigation:** open Hafez → ghazals → poem 1; check the poet/category/poem selections and the back button.

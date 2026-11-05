@@ -27,6 +27,7 @@ struct LibraryWindow: View {
     @State private var splitVisibility: NavigationSplitViewVisibility = .all
     @State private var showingFilesSettings = false
     @State private var fontQuery = ""
+    @State private var fontImportNotice = ""
     @State private var installedPersianFonts: [ReaderFontChoice] = []
     @AppStorage("readerFontPostScriptName") private var readerFontName = ""
     @AppStorage("readerPageStyle") private var readerPageStyle = ReaderPageStyle.illuminated.rawValue
@@ -141,7 +142,10 @@ struct LibraryWindow: View {
         }
         .navigationTitle("آرش کمانگیر")
         .task { await model.bootstrap() }
-        .onAppear(perform: refreshFonts)
+        .onAppear {
+            ReaderUserFonts.registerExisting()
+            refreshFonts()
+        }
         .sheet(isPresented: $showingFilesSettings) {
             LibraryFilesSettings(
                 model: model,
@@ -444,59 +448,199 @@ struct LibraryWindow: View {
     }
 
     private var readingSettings: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            HStack {
-                Text("Reading preferences")
-                    .font(.headline)
-                Spacer()
-                Button("Reset") {
-                    readerTheme = ReaderAppearance.system.rawValue
-                    fontSize = 24
-                    lineSpacing = 5
-                    readerContentWidth = 820
+        ScrollView {
+            VStack(alignment: .leading, spacing: 17) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Poetry appearance").font(.headline)
+                        Text("خط و رنگ · Make this page yours")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Reset") {
+                        readerTheme = ReaderAppearance.paper.rawValue
+                        readerPageStyle = ReaderPageStyle.illuminated.rawValue
+                        readerFontName = ""
+                        fontSize = 24
+                        lineSpacing = 5
+                        readerContentWidth = 820
+                    }
+                    .font(.caption)
                 }
-                .font(.caption)
-            }
-            Picker("Theme", selection: $readerTheme) {
-                ForEach(ReaderAppearance.allCases) { appearance in
-                    Text(appearance.title).tag(appearance.rawValue)
-                }
-            }
-            .pickerStyle(.segmented)
-            .accessibilityIdentifier("reader-theme-picker")
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Text size: \(Int(fontSize)) pt")
-                    .font(.subheadline)
-                Slider(value: $fontSize, in: 17...42, step: 1)
+                VStack(alignment: .leading, spacing: 9) {
+                    Text("Palette · رنگ").font(.subheadline.weight(.medium))
+                    HStack(spacing: 12) {
+                        ForEach(ReaderAppearance.allCases) { appearance in
+                            Button {
+                                readerTheme = appearance.rawValue
+                            } label: {
+                                Circle()
+                                    .fill(appearance.page)
+                                    .frame(width: 34, height: 34)
+                                    .overlay(Circle().stroke(appearance.ornament, lineWidth: 2))
+                                    .overlay {
+                                        if readerTheme == appearance.rawValue {
+                                            Image(systemName: "checkmark")
+                                                .font(.caption.bold())
+                                                .foregroundStyle(appearance.foreground)
+                                        }
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                            .help(appearance.title)
+                            .accessibilityLabel(appearance.title)
+                            .accessibilityIdentifier("palette-\(appearance.rawValue)")
+                        }
+                    }
+                    Text(readerAppearance.title)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Picker("Page style · صفحه", selection: $readerPageStyle) {
+                    ForEach(ReaderPageStyle.allCases) { style in
+                        Text(style.title).tag(style.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("reader-page-style")
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 7) {
+                    HStack {
+                        Text("Persian typeface · قلم")
+                            .font(.subheadline.weight(.medium))
+                        Spacer()
+                        Button {
+                            importLocalFont()
+                        } label: {
+                            Label("Add font…", systemImage: "plus.circle")
+                        }
+                        .font(.caption)
+                        .buttonStyle(.borderless)
+                        .accessibilityIdentifier("import-personal-font")
+                        Button {
+                            refreshFonts()
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .help("Refresh installed fonts")
+                        .buttonStyle(.borderless)
+                    }
+
+                    TextField("Filter installed fonts…", text: $fontQuery)
+                        .textFieldStyle(.roundedBorder)
+
+                    Picker("Typeface", selection: $readerFontName) {
+                        Text("System serif · پیش‌فرض").tag("")
+                        if !readerFontName.isEmpty &&
+                            !matchingFonts.contains(where: { $0.name == readerFontName }) {
+                            Text("Selected: \(readerFontName)").tag(readerFontName)
+                        }
+                        ForEach(matchingFonts) { option in
+                            Text(option.label).tag(option.name)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .accessibilityIdentifier("reader-font-picker")
+
+                    if !readerFontName.isEmpty && !ReaderFontCatalog.isAvailable(readerFontName) {
+                        Text("This font is unavailable. The reader is using the system serif until it is installed.")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                    if !fontImportNotice.isEmpty {
+                        Text(fontImportNotice)
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    }
+                    Text("Fonts from macOS Font Book and your own .ttf/.otf/.ttc files appear here. User fonts remain on this Mac and are not redistributed.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text("به جهان خرم از آنم که جهان خرم از اوست")
+                        .font(ReaderFontCatalog.font(readerFontName, size: 24))
+                        .foregroundStyle(readerAppearance.foreground)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(16)
+                        .background(readerAppearance.page, in: RoundedRectangle(cornerRadius: 8))
+                        .accessibilityIdentifier("font-preview")
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Text size: \(Int(fontSize)) pt")
+                        .font(.subheadline)
+                    Slider(value: $fontSize, in: 17...42, step: 1)
+                        .accessibilityIdentifier("reader-text-size")
+                    Text("Verse spacing")
+                        .font(.subheadline)
+                    Slider(value: $lineSpacing, in: 0...20, step: 1)
+                        .accessibilityIdentifier("reader-verse-spacing")
+                    Text("Reading width")
+                        .font(.subheadline)
+                    Slider(value: $readerContentWidth, in: 620...960, step: 20)
+                        .accessibilityIdentifier("reader-reading-width")
+                }
+
+                Text("These settings are saved separately for each app identity on this Mac.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Verse spacing")
-                    .font(.subheadline)
-                Slider(value: $lineSpacing, in: 0...20, step: 1)
-            }
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Reading width")
-                    .font(.subheadline)
-                Slider(value: $readerContentWidth, in: 620...960, step: 20)
-            }
-            Text("These settings are saved on this Mac.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            .padding(20)
         }
-        .padding(18)
-        .frame(width: 320)
+        .frame(width: 430, height: 610)
     }
 
-    private func verseText(_ value: String) -> some View {
-        Text(value)
-            .font(.system(size: fontSize, design: .serif))
-            .multilineTextAlignment(.trailing)
-            .lineSpacing(lineSpacing)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .textSelection(.enabled)
-            .fixedSize(horizontal: false, vertical: true)
+    private func importLocalFont() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = ["ttf", "otf", "ttc"].compactMap {
+            UTType(filenameExtension: $0)
+        }
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.message = "Choose a Persian font file you are licensed to use."
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try ReaderUserFonts.importUserFont(url)
+            refreshFonts()
+            fontImportNotice = "Font added. Choose its typeface from the menu below."
+            fontQuery = ""
+        } catch {
+            model.errorMessage = "Could not add font: \(error.localizedDescription)"
+        }
     }
+
+    private func exportCurrentPoem() {
+        guard let poem = model.poem else { return }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.plainText]
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = poem.title
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-") + ".txt"
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let document = """
+        \(poem.fullTitle ?? poem.title)
+
+        \(poem.plainText)
+
+        Source: https://ganjoor.net\(poem.fullURL)
+        """
+        do {
+            try document.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            model.errorMessage = "Could not export the poem: \(error.localizedDescription)"
+        }
+    }
+
 }
 
 struct EmptyPanel: View {
