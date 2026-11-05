@@ -20,9 +20,11 @@ struct IlluminatedReaderView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let pageWidth = min(CGFloat(contentWidth), max(300, geometry.size.width - 32))
-            let innerPadding: CGFloat = style == .illuminated
-                ? (pageWidth >= 630 ? 52 : 26) : 24
+            let layout = ReaderPageLayout(viewportWidth: geometry.size.width,
+                                          preferredWidth: contentWidth,
+                                          illuminated: style == .illuminated)
+            let pageWidth = CGFloat(layout.pageWidth)
+            let innerPadding = CGFloat(layout.innerPadding)
 
             ScrollView {
                 VStack(spacing: 22) {
@@ -84,7 +86,7 @@ struct IlluminatedReaderView: View {
                 }
                 .foregroundStyle(appearance.foreground)
                 .tint(appearance.linkTint)
-                .frame(maxWidth: max(210, pageWidth - innerPadding * 2))
+                .frame(maxWidth: max(0, pageWidth - innerPadding * 2))
                 .padding(.horizontal, innerPadding)
                 .padding(.top, style == .illuminated ? 52 : 32)
                 .padding(.bottom, style == .illuminated ? 65 : 40)
@@ -98,7 +100,7 @@ struct IlluminatedReaderView: View {
                 .shadow(color: appearance.ornament.opacity(0.16),
                         radius: 22, x: 0, y: 12)
                 .padding(.vertical, 30)
-                .padding(.horizontal, 18)
+                .padding(.horizontal, layout.outerPadding)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .opacity(revealed ? 1 : 0)
                 .offset(y: !reduceMotion && !revealed ? 12 : 0)
