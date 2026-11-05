@@ -16,6 +16,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var downloadTotal = 0
     @Published private(set) var downloadMessage = ""
     @Published private(set) var bookmarks: Set<String>
+    @Published private(set) var offlineRecords: [OfflinePoetRecord] = []
+    @Published private(set) var isRemovingOfflinePoet = false
     @Published var errorMessage: String?
 
     private let client = GanjoorClient()
@@ -37,9 +39,7 @@ final class AppModel: ObservableObject {
         if let cached: GanjoorManifest = try? await library.load("manifest.json", as: GanjoorManifest.self) {
             poets = cached.poets
         }
-        if let saved = try? await library.importedPoetSlugs() {
-            importedPoets = saved
-        }
+        await refreshOfflineLibrary()
         await refreshCatalog(showError: poets.isEmpty)
     }
 
@@ -122,12 +122,38 @@ final class AppModel: ObservableObject {
                         self?.downloadMessage = "Saving \(completed) / \(total) poems"
                     }
                 }
-            importedPoets = try await library.importedPoetSlugs()
+            await refreshOfflineLibrary()
             downloadMessage = "Offline download complete."
         } catch is CancellationError {
             downloadMessage = "Download stopped. Already downloaded files are kept."
         } catch {
             downloadMessage = "Download interrupted. You can try again to resume."
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func refreshOfflineLibrary() async {
+        do {
+            let records = try await library.offlinePoetRecords()
+            offlineRecords = records
+            importedPoets = Set(records.map(\.slug))
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func removeOfflinePoet(_ slug: String) async {
+        // Avoid racing a download with deletion of the same directory.
+        guard !isDownloading, !isRemovingOfflinePoet else { return }
+        isRemovingOfflinePoet = true
+        defer { isRemovingOfflinePoet = false }
+        do {
+            try await library.removeOfflinePoet(slug)
+            await refreshOfflineLibrary()
+            if selectedPoet?.slug == slug {
+                downloadMessage = "Local copy removed. Online reading is still available."
+            }
+        } catch {
             errorMessage = error.localizedDescription
         }
     }
