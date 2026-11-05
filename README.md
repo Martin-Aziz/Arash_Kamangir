@@ -59,6 +59,28 @@ To create a **local, unsigned/notarization-free** .app bundle for testing:
 
 The local packaging script uses an ad-hoc code signature; it does not produce an Apple-notarized distributed application.
 
+### Isolated macOS QA app (development only)
+
+To complete GUI tests without touching the real poetry cache, build the dedicated QA app:
+
+    swift test
+    bash scripts/package-macos.sh --qa
+    open -n dist/ArashKam-QA.app
+
+The separate `com.arashkam.reader.qa` bundle uses
+`~/Library/Application Support/ArashKamQA/GanjoorData/` and a distinct
+UserDefaults domain. Look for the **QA build · Isolated data** label in its
+sidebar. Normal packaging without `--qa` retains the original app identity.
+
+A read-only network source probe and an app-window screenshot helper are
+available for repeatable QA:
+
+    bash scripts/qa-ganjoor-network-probe.sh
+    bash scripts/qa-capture-window.sh "$HOME/Desktop/arash-qa.png"
+
+See [isolated macOS QA instructions](docs/ISOLATED_MAC_QA.md). This helper
+is not a replacement for actual macOS GUI tests or a notarized release.
+
 ### Data location
 
     ~/Library/Application Support/ArashKam/GanjoorData/

@@ -1,6 +1,8 @@
 # Local Mac verification — Phase 2A
 
-This branch has not been compiled, launched or visually inspected on a Mac by the initial author. Do not treat a code review as macOS GUI certification.
+Earlier Mac QA (macOS 27.2, Swift 6.4.2) passed 11 unit tests and debug/release builds, and verified Hafez 1 → 2 → 1 with existing cached data. The fresh-network GUI flow and broader end-to-end checks remain unverified. No release certification is implied.
+
+For repeatable, isolated network GUI testing and app-only screenshot capture, follow the [separate QA app guide](ISOLATED_MAC_QA.md). The QA helper itself still needs its first Mac verification.
 
 ## Environment
 

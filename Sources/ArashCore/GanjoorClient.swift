@@ -67,14 +67,30 @@ public struct OfflinePoetRecord: Identifiable, Equatable, Sendable {
     }
 }
 
+/// The QA .app is a separate bundle ID and must never share the user's
+/// existing poetry cache. This pure resolver is independently unit-testable.
+public enum GanjoorLibraryLocation {
+    public static let productionBundleID = "com.arashkam.reader"
+    public static let qaBundleID = "com.arashkam.reader.qa"
+
+    public static func defaultRoot(applicationSupport: URL, bundleID: String?) -> URL {
+        let directory = bundleID == qaBundleID ? "ArashKamQA" : "ArashKam"
+        return applicationSupport
+            .appendingPathComponent(directory, isDirectory: true)
+            .appendingPathComponent("GanjoorData", isDirectory: true)
+    }
+}
+
 /// A private, application-support data directory. No downloaded data is executed or rendered as HTML.
 public actor GanjoorDiskLibrary {
     public let root: URL
 
     public init(root: URL? = nil) {
-        self.root = root ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("ArashKam", isDirectory: true)
-            .appendingPathComponent("GanjoorData", isDirectory: true)
+        let support = FileManager.default.urls(
+            for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        self.root = root ?? GanjoorLibraryLocation.defaultRoot(
+            applicationSupport: support,
+            bundleID: Bundle.main.bundleIdentifier)
     }
 
     /// Return raw bytes across the actor boundary. Callers decode on their own
