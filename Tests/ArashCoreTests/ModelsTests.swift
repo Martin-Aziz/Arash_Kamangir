@@ -87,6 +87,23 @@ final class ModelsTests: XCTestCase {
     }
 
 
+    func testIsolatedQABundleNeverSharesProductionLibrary() {
+        let support = URL(fileURLWithPath: "/tmp/ArashQA-Test-ApplicationSupport", isDirectory: true)
+        let production = GanjoorLibraryLocation.defaultRoot(
+            applicationSupport: support, bundleID: GanjoorLibraryLocation.productionBundleID)
+        let qa = GanjoorLibraryLocation.defaultRoot(
+            applicationSupport: support, bundleID: GanjoorLibraryLocation.qaBundleID)
+        let commandLine = GanjoorLibraryLocation.defaultRoot(
+            applicationSupport: support, bundleID: nil)
+
+        XCTAssertEqual(production.lastPathComponent, "GanjoorData")
+        XCTAssertEqual(qa.lastPathComponent, "GanjoorData")
+        XCTAssertEqual(production.deletingLastPathComponent().lastPathComponent, "ArashKam")
+        XCTAssertEqual(qa.deletingLastPathComponent().lastPathComponent, "ArashKamQA")
+        XCTAssertNotEqual(production.standardizedFileURL, qa.standardizedFileURL)
+        XCTAssertEqual(commandLine, production)
+    }
+
     func testOfflineInventoryAndSafeDeletion() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: temp) }
