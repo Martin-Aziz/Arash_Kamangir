@@ -36,7 +36,7 @@ previously opened poem while a different poem is loading.
 
 1. Open Hafez → Ghazals; locate the actual **غزل شمارهٔ ۱** row.
 2. With Accessibility Inspector or GUI automation, select the button with
-   \`accessibilityIdentifier == "poem-row-2130"\`. Avoid coordinate-only clicks
+   `accessibilityIdentifier == "poem-row-2130"`. Avoid coordinate-only clicks
    in a scrolling list whose row heights can change.
 3. If the loading state is visible, its path must be **/hafez/ghazal/sh1**.
    Wait until the loading state disappears. Inspect the heading with
@@ -50,9 +50,9 @@ previously opened poem while a different poem is loading.
    never silently display a stale previous result.
 7. If the identity still differs, inspect (do not delete or overwrite) the
    local cache at
-   \`~/Library/Application Support/ArashKam/GanjoorData/poets/hafez/ghazal/\`.
-   Compare \`_cat.json\`, \`sh1.json\`, \`sh2.json\` fields \`Id\`,
-   \`FullUrl\` and \`Title\` against the displayed row and reader heading.
+   `~/Library/Application Support/ArashKam/GanjoorData/poets/hafez/ghazal/`.
+   Compare `_cat.json`, `sh1.json`, `sh2.json` fields `Id`,
+   `FullUrl` and `Title` against the displayed row and reader heading.
    Save the findings/screenshots; never wipe user data to make a test pass.
 
 This is a **release-blocking** regression test. A successful unit test alone
