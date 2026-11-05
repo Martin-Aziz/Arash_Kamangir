@@ -50,7 +50,13 @@ enum ReaderUserFonts {
 
         let ext = source.pathExtension.lowercased()
         guard allowedExtensions.contains(ext) else { throw ReaderFontImportError.unsupported }
-        guard isSafeRegularFile(source) else { throw ReaderFontImportError.invalidFile }
+        guard let values = try? source.resourceValues(
+            forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey]),
+              values.isRegularFile == true, values.isSymbolicLink != true,
+              let bytes = values.fileSize, bytes > 0 else {
+            throw ReaderFontImportError.invalidFile
+        }
+        guard Int64(bytes) <= maxSize else { throw ReaderFontImportError.tooLarge }
 
         let folder = directory()
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
