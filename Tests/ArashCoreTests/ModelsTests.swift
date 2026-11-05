@@ -61,9 +61,12 @@ final class ModelsTests: XCTestCase {
         try await disk.removeOfflinePoet("hafez")
         // A second removal is safe if the first already completed.
         try await disk.removeOfflinePoet("hafez")
-        XCTAssertFalse(try await disk.exists("poets/hafez/poet.json"))
-        XCTAssertTrue(try await disk.exists("poets/saadi/poet.json"))
-        XCTAssertTrue(try await disk.exists("poets/rumi/poet.json"))
+        let removed = try await disk.exists("poets/hafez/poet.json")
+        let other = try await disk.exists("poets/saadi/poet.json")
+        let partial = try await disk.exists("poets/rumi/poet.json")
+        XCTAssertFalse(removed)
+        XCTAssertTrue(other)
+        XCTAssertTrue(partial)
         let remaining = try await disk.offlinePoetRecords()
         XCTAssertEqual(remaining.map(\.slug), ["saadi"])
     }
