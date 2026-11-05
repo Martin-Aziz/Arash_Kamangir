@@ -21,6 +21,7 @@ struct LibraryWindow: View {
     @State private var downloadTask: Task<Void, Never>?
     @State private var downloadedOnly = false
     @State private var showingLibraryManager = false
+    @State private var showingBookmarks = false
     @State private var showingReadingSettings = false
     @AppStorage("readerFontSize") private var fontSize = 24.0
     @AppStorage("readerLineSpacing") private var lineSpacing = 5.0
@@ -102,6 +103,9 @@ struct LibraryWindow: View {
         .sheet(isPresented: $showingLibraryManager) {
             LibraryManagerView(model: model)
         }
+        .sheet(isPresented: $showingBookmarks) {
+            BookmarksView(model: model)
+        }
         .alert("Arash Kamangir", isPresented: Binding(
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
@@ -181,6 +185,14 @@ struct LibraryWindow: View {
                 Text("\(model.importedPoets.count) poets downloaded for offline reading")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Button {
+                    showingBookmarks = true
+                } label: {
+                    Label("Saved poetry (\(model.bookmarks.count))", systemImage: "bookmark")
+                }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
                 Button {
                     showingLibraryManager = true
                 } label: {
