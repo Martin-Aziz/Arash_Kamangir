@@ -114,7 +114,7 @@ public actor GanjoorDiskLibrary {
     public func offlinePoetRecords() throws -> [OfflinePoetRecord] {
         try importedPoetSlugs().sorted().map { slug in
             try validatePoetSlug(slug)
-            let directory = try fileURL("poets/\\(slug)")
+            let directory = try fileURL("poets/\(slug)")
             var bytes: Int64 = 0
             var count = 0
             if let iterator = FileManager.default.enumerator(
@@ -137,8 +137,8 @@ public actor GanjoorDiskLibrary {
     /// It never touches the source manifest, other poets or user bookmarks.
     public func removeOfflinePoet(_ slug: String) throws {
         try validatePoetSlug(slug)
-        let directory = try fileURL("poets/\\(slug)")
-        let completion = try fileURL("completed/\\(slug).complete")
+        let directory = try fileURL("poets/\(slug)")
+        let completion = try fileURL("completed/\(slug).complete")
         if FileManager.default.fileExists(atPath: directory.path) {
             try FileManager.default.removeItem(at: directory)
         }
