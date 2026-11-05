@@ -10,6 +10,7 @@ struct IlluminatedReaderView: View {
     let collectionName: String
     let appearance: ReaderAppearance
     let style: ReaderPageStyle
+    let template: ManuscriptTemplate
     let fontName: String
     let fontSize: Double
     let lineSpacing: Double
@@ -29,9 +30,12 @@ struct IlluminatedReaderView: View {
             ScrollView {
                 VStack(spacing: 22) {
                     if style == .illuminated {
-                        ArashMark(color: appearance.ornament)
-                            .frame(width: 28, height: 28)
-                            .accessibilityHidden(true)
+                        PersianIlluminatedHeadpiece(
+                            template: template,
+                            compact: pageWidth < 510)
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, pageWidth >= 640 ? 2 : 0)
+                            .accessibilityIdentifier("manuscript-headpiece")
                     }
 
                     VStack(spacing: 7) {
@@ -88,12 +92,13 @@ struct IlluminatedReaderView: View {
                 .tint(appearance.linkTint)
                 .frame(maxWidth: max(0, pageWidth - innerPadding * 2))
                 .padding(.horizontal, innerPadding)
-                .padding(.top, style == .illuminated ? 52 : 32)
-                .padding(.bottom, style == .illuminated ? 65 : 40)
+                .padding(.top, style == .illuminated ? (pageWidth < 510 ? 25 : 45) : 32)
+                .padding(.bottom, style == .illuminated ? 72 : 40)
                 .background(appearance.page)
                 .overlay {
                     if style == .illuminated {
-                        ManuscriptFrame(color: appearance.ornament)
+                        PersianIlluminatedFrame(template: template,
+                            ornate: pageWidth >= 545)
                     }
                 }
                 .frame(width: pageWidth)

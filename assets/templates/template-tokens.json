@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "designLanguage": "Persian tazhib — original vector artwork; public-domain historical references only",
+  "rendering": {
+    "liveText": "SwiftUI Text / CoreText — never rasterize original poetry",
+    "chrome": "macOS Liquid Glass for controls only; no transparent material over verses",
+    "headpiece": "PersianIlluminatedHeadpiece",
+    "border": "PersianIlluminatedFrame",
+    "keptReadable": true,
+    "compactHeaderBelowPageWidth": 510,
+    "floralMarginsAbovePageWidth": 545,
+    "scrollContentsExtendVertically": true
+  },
+  "typographicScale": {
+    "defaultPoemSizePt": 24,
+    "rangePt": [
+      17,
+      42
+    ],
+    "headingOffsetPt": 9
+  },
+  "accessiblePadding": "ReaderPageLayout manages internal/outer margins at small widths",
+  "templates": [
+    {
+      "id": "royalLapis",
+      "name": "Royal Lapis · لاجورد",
+      "editorialMood": "imperial illuminated manuscript",
+      "pigment": "#14336e",
+      "pigmentLight": "#3666a1",
+      "metal": "#c99945",
+      "blossom": "#ba4f5e",
+      "leaf": "#408269",
+      "asset": "royal-lapis-headpiece.svg",
+      "recommendedReaderPalette": "paper"
+    },
+    {
+      "id": "shirazGarden",
+      "name": "Shiraz Garden · باغ شیراز",
+      "editorialMood": "romantic roses and green vines",
+      "pigment": "#30664d",
+      "pigmentLight": "#6b9e73",
+      "metal": "#ba8f4f",
+      "blossom": "#b35e6e",
+      "leaf": "#38734f",
+      "asset": "shiraz-garden-headpiece.svg",
+      "recommendedReaderPalette": "jade"
+    },
+    {
+      "id": "moonlitDiwan",
+      "name": "Moonlit Divan · دیوان مهتاب",
+      "editorialMood": "celestial midnight blue and silver-gold",
+      "pigment": "#122147",
+      "pigmentLight": "#38578c",
+      "metal": "#c7b885",
+      "blossom": "#b0a3d6",
+      "leaf": "#739499",
+      "asset": "moonlit-divan-headpiece.svg",
+      "recommendedReaderPalette": "night"
+    }
+  ],
+  "quality": {
+    "sourceAttribution": "Never erase poet, poem title, or canonical Ganjoor URL",
+    "assetUsage": "SVGs are editable designer handoff references. SwiftUI Canvas is the native live renderer, not an SVG WebView.",
+    "accessibility": "Borders and headpieces excluded from VoiceOver, no pointer hit testing. Text remains selectable.",
+    "imagery": "No user-submitted manuscript scans or commercial fonts redistributed."
+  }
+}

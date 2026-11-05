@@ -133,6 +133,44 @@ six palettes, two fonts, Keepsake preview, PNG export and narrow window
 screenshots. Do not auto-merge an unverified PR or delete any original
 download/font from the user's checkout.
 
+## Manuscript Template Studio — illustrated fidelity QA
+
+Refer to `docs/MANUSCRIPT_TEMPLATE_STUDIO.md` and the designer SVGs.
+**Do not certify merely because three styles appear in a menu.**
+
+1. Run `python3 scripts/check-manuscript-design.py` and all Mac Swift
+   test/build/release/QA-packaging commands.
+2. Open Hafez ghazal 1 and appearance inspector. Choose Royal Lapis.
+   Verify a **large layered gold/lapis sar-lawh headpiece**, visible flower
+   and leaf margins and richly ornamented corner medallions. Save screenshot.
+3. Switch to Shiraz Garden. The green-and-rose flowers must be visibly
+   different. Switch to Moonlit Divan: blue/silver/lavender must be
+   distinguishable. All three must change the actual page, not the
+   appearance-settings thumbnail alone.
+4. Change font (Amiri, installed Noto Nastaliq, imported Vazirmatn),
+   page color, text size and poem selection. Verify proper Persian shaping,
+   full diacritics, correct verse ordering and no ornament over the text.
+5. Compare full-width Focus mode and the narrow 3-column viewport at
+   920/1220/1600px windows, 17/24/42pt text, and inspector open/closed.
+   Borders must simplify when narrow, rather than force scroll/clipping.
+6. Open Keepsake Studio for Hafez #2130, export one PNG for each of the
+   three templates. Verify actual 1440×1800 pixels, original couplet,
+   poet/title/Ganjoor URL, no ornament over copyable text.
+7. Test Quiet style: no manuscript header/ornament should be rendered.
+   Switch back to Illuminated and restart the QA app: remember the chosen
+   edition, font, page palette and style. Production settings unaffected.
+8. Inspect VoiceOver reading order and text selection; decorative artwork
+   should never be VoiceOver-focusable or capture clicks. Reduce Motion,
+   Reduced Transparency and Night palette contrast must be acceptable.
+9. Return Hafez sh2 → sh1; export text and copy, bookmarks, and actual
+   offline archive must behave identically to the last certified build.
+
+PASS requires screenshots of the *running app*, not prototype SVG/PNG.
+Compare the app images against `assets/templates/*-headpiece.svg` and
+the user's actual Persian manuscript references. Fix missing art/detail
+and clipping in an unmerged PR. A first successful UI render is not proof
+of a complete release or offline download certification (#10).
+
 ## Functional checks
 
 1. **Navigation:** open Hafez → ghazals → poem 1; check the poet/category/poem selections and the back button.
