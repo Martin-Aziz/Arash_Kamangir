@@ -95,6 +95,12 @@ public struct GanjoorPoem: Decodable, Identifiable {
         case verses = "Verses"
     }
 
+    /// The category row is the authoritative selection target. Never display a
+    /// cached or downloaded poem whose identity differs from the tapped row.
+    public func matches(_ entry: GanjoorEntry) -> Bool {
+        id == entry.id && fullURL == entry.fullURL
+    }
+
     public var orderedVerses: [GanjoorVerse] { verses.sorted { $0.order < $1.order } }
     public var plainText: String { orderedVerses.map(\.text).joined(separator: "\n") }
 

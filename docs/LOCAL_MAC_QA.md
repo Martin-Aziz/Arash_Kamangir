@@ -28,6 +28,36 @@ If the executable launches correctly, also test local .app packaging:
 
 The package script produces an **ad-hoc signed, unnotarized** app for local testing only.
 
+## Regression: Hafez ghazal 1 vs 2 (previously blocked)
+
+The Ganjoor source data maps category row ID 2130 to **/hafez/ghazal/sh1**
+and ID 2131 to **/hafez/ghazal/sh2**. The reader must never display a
+previously opened poem while a different poem is loading.
+
+1. Open Hafez → Ghazals; locate the actual **غزل شمارهٔ ۱** row.
+2. With Accessibility Inspector or GUI automation, select the button with
+   `accessibilityIdentifier == "poem-row-2130"`. Avoid coordinate-only clicks
+   in a scrolling list whose row heights can change.
+3. If the loading state is visible, its path must be **/hafez/ghazal/sh1**.
+   Wait until the loading state disappears. Inspect the heading with
+   identifier **reader-poem-title**; the title must contain **غزل شمارهٔ ۱**
+   and its accessibility value must be **/hafez/ghazal/sh1**.
+4. Select **poem-row-2131**. The previous poem must clear promptly, then
+   the reader must show **غزل شمارهٔ ۲** and **/hafez/ghazal/sh2**.
+5. Repeat 2130 → 2131 → 2130 with both fresh/network and cached data.
+   Verify row tap identity and completed reader identity separately.
+6. Test a click during an active load: other poem rows must be disabled,
+   never silently display a stale previous result.
+7. If the identity still differs, inspect (do not delete or overwrite) the
+   local cache at
+   `~/Library/Application Support/ArashKam/GanjoorData/poets/hafez/ghazal/`.
+   Compare `_cat.json`, `sh1.json`, `sh2.json` fields `Id`,
+   `FullUrl` and `Title` against the displayed row and reader heading.
+   Save the findings/screenshots; never wipe user data to make a test pass.
+
+This is a **release-blocking** regression test. A successful unit test alone
+does not establish that the GUI action targeted the correct row.
+
 ## Functional checks
 
 1. **Navigation:** open Hafez → ghazals → poem 1; check the poet/category/poem selections and the back button.

@@ -18,6 +18,52 @@ final class ModelsTests: XCTestCase {
                        "poets/hafez/ghazal/_cat.json")
     }
 
+    func testHafezGhazalSelectionMatchesCanonicalPoemIdentity() throws {
+        // Mirrors Ganjoor's official _cat.json and sh1/sh2 identity fields.
+        // Selection uses canonical FullUrl, NOT list position or poem number math.
+        let categoryJSON = #"""
+        {"Id":24,"Title":"غزلیات","FullUrl":"/hafez/ghazal",
+         "ChildCats":[],
+         "Poems":[
+            {"Id":2130,"Title":"غزل شمارهٔ ۱","FullUrl":"/hafez/ghazal/sh1"},
+            {"Id":2131,"Title":"غزل شمارهٔ ۲","FullUrl":"/hafez/ghazal/sh2"}]}
+        """#
+        let firstJSON = #"""
+        {"Id":2130,"Title":"غزل شمارهٔ ۱",
+         "FullTitle":"حافظ » غزلیات » غزل شمارهٔ ۱",
+         "FullUrl":"/hafez/ghazal/sh1", "Verses":[]}
+        """#
+        let secondJSON = #"""
+        {"Id":2131,"Title":"غزل شمارهٔ ۲",
+         "FullTitle":"حافظ » غزلیات » غزل شمارهٔ ۲",
+         "FullUrl":"/hafez/ghazal/sh2", "Verses":[]}
+        """#
+        let decoder = JSONDecoder()
+        let category = try decoder.decode(GanjoorCategory.self, from: Data(categoryJSON.utf8))
+        let first = try decoder.decode(GanjoorPoem.self, from: Data(firstJSON.utf8))
+        let second = try decoder.decode(GanjoorPoem.self, from: Data(secondJSON.utf8))
+
+        let firstRow = try XCTUnwrap(category.poems.first)
+        let secondRow = try XCTUnwrap(category.poems.last)
+        XCTAssertEqual(firstRow.id, 2130)
+        XCTAssertEqual(firstRow.title, "غزل شمارهٔ ۱")
+        XCTAssertEqual(try GanjoorPath.poem(firstRow.fullURL), "poets/hafez/ghazal/sh1.json")
+        XCTAssertTrue(first.matches(firstRow))
+        XCTAssertFalse(second.matches(firstRow))
+        XCTAssertTrue(second.matches(secondRow))
+        XCTAssertFalse(first.matches(secondRow))
+    }
+
+    func testWrongPoemIDIsRejectedEvenWhenURLMatches() throws {
+        let row = try JSONDecoder().decode(
+            GanjoorEntry.self,
+            from: Data(#"{"Id":2130,"Title":"غزل شمارهٔ ۱","FullUrl":"/hafez/ghazal/sh1"}"#.utf8))
+        let mismatchedPoem = try JSONDecoder().decode(
+            GanjoorPoem.self,
+            from: Data(#"{"Id":2131,"Title":"غزل شمارهٔ ۱","FullUrl":"/hafez/ghazal/sh1","Verses":[]}"#.utf8))
+        XCTAssertFalse(mismatchedPoem.matches(row))
+    }
+
     func testVerseGroupingAndOrder() throws {
         let json = #"{"Id":2130,"Title":"غزل شماره ۱","FullUrl":"/hafez/ghazal/sh1","Verses":[{"VOrder":2,"Position":"Left","Text":"دوم","CoupletIndex":0},{"VOrder":1,"Position":"Right","Text":"اول","CoupletIndex":0},{"VOrder":3,"Position":"Single","Text":"سوم","CoupletIndex":1}]}"#
         let poem = try JSONDecoder().decode(GanjoorPoem.self, from: Data(json.utf8))

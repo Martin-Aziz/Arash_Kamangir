@@ -214,7 +214,7 @@ struct LibraryWindow: View {
                 Button {
                     model.goBack()
                 } label: { Image(systemName: "chevron.left") }
-                    .disabled(!model.canGoBack)
+                    .disabled(!model.canGoBack || model.isLoading)
                     .help("Back to previous collection")
                 Spacer(minLength: 5)
                 Text(model.category?.title ?? "کتابخانه")
@@ -244,7 +244,10 @@ struct LibraryWindow: View {
                                         Text(entry.title)
                                             .multilineTextAlignment(.trailing)
                                     }
-                                }.buttonStyle(.plain)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(model.isLoading)
+                                .accessibilityIdentifier("category-row-\(entry.id)")
                             }
                         }
                     }
@@ -264,7 +267,15 @@ struct LibraryWindow: View {
                                             .multilineTextAlignment(.trailing)
                                     }
                                     .padding(.vertical, 2)
-                                }.buttonStyle(.plain)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(model.isLoading)
+                                .accessibilityLabel(Text(entry.title))
+                                .accessibilityIdentifier("poem-row-\(entry.id)")
+                                .accessibilityHint(Text("Opens \(entry.title)"))
+                                .listRowBackground(
+                                    model.poem?.fullURL == entry.fullURL
+                                        ? Color.accentColor.opacity(0.10) : Color.clear)
                             }
                         }
                     }
@@ -333,6 +344,9 @@ struct LibraryWindow: View {
                             .font(.system(size: 27, weight: .semibold, design: .serif))
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
+                            .accessibilityAddTraits(.isHeader)
+                            .accessibilityIdentifier("reader-poem-title")
+                            .accessibilityValue(Text(poem.fullURL))
                         Divider()
                         VStack(spacing: 20 + lineSpacing) {
                             ForEach(poem.readingGroups) { group in
@@ -364,8 +378,19 @@ struct LibraryWindow: View {
                     .frame(maxWidth: .infinity)
                 }
             } else if model.isLoading {
-                ProgressView("Loading poem…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 12) {
+                    ProgressView {
+                        Text(model.requestedPoem.map { "Opening \($0.title)…" } ?? "Loading…")
+                    }
+                    if let requested = model.requestedPoem {
+                        Text(requested.fullURL)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("reader-loading-path")
+                    }
+                }
+                .accessibilityIdentifier("reader-loading")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 EmptyPanel(symbol: "text.book.closed", headline: "A place for poetry",
                            subtitle: "Browse a collection and select a poem to begin reading.")

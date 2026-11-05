@@ -77,10 +77,18 @@ public actor GanjoorDiskLibrary {
             .appendingPathComponent("GanjoorData", isDirectory: true)
     }
 
-    public func load<T: Decodable>(_ relative: String, as type: T.Type) throws -> T? {
+    /// Return raw bytes across the actor boundary. Callers decode on their own
+    /// isolation domain, avoiding crossing a potentially actor-isolated Decodable
+    /// conformance in Swift 6. The archive itself never executes any content.
+    public func loadData(_ relative: String) throws -> Data? {
         let path = try fileURL(relative)
         guard FileManager.default.fileExists(atPath: path.path) else { return nil }
-        return try JSONDecoder().decode(type, from: Data(contentsOf: path))
+        return try Data(contentsOf: path)
+    }
+
+    public func load<T: Decodable>(_ relative: String, as type: T.Type) throws -> T? {
+        guard let data = try loadData(relative) else { return nil }
+        return try JSONDecoder().decode(type, from: data)
     }
 
     public func exists(_ relative: String) throws -> Bool {

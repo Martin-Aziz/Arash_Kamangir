@@ -17,6 +17,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var category: GanjoorCategory?
     @Published private(set) var poem: GanjoorPoem?
     @Published private(set) var isLoading = false
+    @Published private(set) var requestedPoem: GanjoorEntry?
     @Published private(set) var isDownloading = false
     @Published private(set) var importedPoets = Set<String>()
     @Published private(set) var downloadDone = 0
@@ -44,7 +45,7 @@ final class AppModel: ObservableObject {
 
     func bootstrap() async {
         // The cached catalog keeps the app usable with no network.
-        if let cached: GanjoorManifest = try? await library.load("manifest.json", as: GanjoorManifest.self) {
+        if let cached: GanjoorManifest = try? await cachedFromDisk("manifest.json", as: GanjoorManifest.self) {
             poets = cached.poets
         }
         await refreshOfflineLibrary()
@@ -65,6 +66,8 @@ final class AppModel: ObservableObject {
     func selectPoet(_ poet: GanjoorPoet) async {
         guard !isLoading else { return }
         isLoading = true
+        poem = nil // Never keep a previous poem visible during a navigation request.
+        requestedPoem = nil
         defer { isLoading = false }
         do {
             let newCategory: GanjoorCategory = try await cachedOrRemote(
@@ -82,6 +85,8 @@ final class AppModel: ObservableObject {
     func openCategory(_ entry: GanjoorEntry) async {
         guard !isLoading else { return }
         isLoading = true
+        poem = nil
+        requestedPoem = nil
         defer { isLoading = false }
         do {
             let next: GanjoorCategory = try await cachedOrRemote(
@@ -103,12 +108,19 @@ final class AppModel: ObservableObject {
 
     func openPoem(_ entry: GanjoorEntry) async {
         guard !isLoading else { return }
+        // The previous poem must disappear immediately, not remain as a stale
+        // detail pane while the newly tapped poem is loading over the network.
+        poem = nil
+        requestedPoem = entry
         isLoading = true
-        defer { isLoading = false }
+        defer {
+            requestedPoem = nil
+            isLoading = false
+        }
         do {
             let next: GanjoorPoem = try await cachedOrRemote(
                 GanjoorPath.poem(entry.fullURL), as: GanjoorPoem.self)
-            guard next.fullURL == entry.fullURL else { throw GanjoorClientError.invalidData }
+            guard next.matches(entry) else { throw GanjoorClientError.invalidData }
             poem = next
         } catch {
             errorMessage = error.localizedDescription
@@ -173,7 +185,7 @@ final class AppModel: ObservableObject {
             guard let segments = try? GanjoorPath.segments(fullURL),
                   segments.count >= 2,
                   let relative = try? GanjoorPath.poem(fullURL) else { continue }
-            let cached: GanjoorPoem? = try? await library.load(relative, as: GanjoorPoem.self)
+            let cached: GanjoorPoem? = try? await cachedFromDisk(relative, as: GanjoorPoem.self)
             let poetName = poets.first(where: { $0.slug == segments[0] })?.nickname ?? segments[0]
             records.append(SavedPoem(
                 fullURL: fullURL,
@@ -193,6 +205,8 @@ final class AppModel: ObservableObject {
             return
         }
         isLoading = true
+        poem = nil
+        requestedPoem = nil // Saved poems do not have a category-row title.
         defer { isLoading = false }
         do {
             let next: GanjoorPoem = try await cachedOrRemote(
@@ -226,8 +240,13 @@ final class AppModel: ObservableObject {
         Task { await refreshBookmarks() }
     }
 
+    private func cachedFromDisk<T: Decodable>(_ path: String, as type: T.Type) async throws -> T? {
+        guard let data = try await library.loadData(path) else { return nil }
+        return try JSONDecoder().decode(type, from: data)
+    }
+
     private func cachedOrRemote<T: Decodable>(_ path: String, as type: T.Type) async throws -> T {
-        if let cached: T = try await library.load(path, as: type) { return cached }
+        if let cached: T = try await cachedFromDisk(path, as: type) { return cached }
         let data = try await client.download(path)
         let value = try JSONDecoder().decode(type, from: data)
         try await library.save(data, at: path)
