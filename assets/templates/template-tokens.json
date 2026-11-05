@@ -9,7 +9,17 @@
     "keptReadable": true,
     "compactHeaderBelowPageWidth": 510,
     "floralMarginsAbovePageWidth": 545,
-    "scrollContentsExtendVertically": true
+    "scrollContentsExtendVertically": true,
+    "nativeHeadpieceArtboard": [
+      900,
+      260
+    ],
+    "headpieceHeightPt": 206,
+    "compactHeadpieceHeightPt": 108,
+    "floralBandWidthPt": 24,
+    "floralTextInsetPt": 52,
+    "canvasRendersAsynchronously": false,
+    "editableAssetGenerator": "scripts/generate-manuscript-svg.py"
   },
   "typographicScale": {
     "defaultPoemSizePt": 24,

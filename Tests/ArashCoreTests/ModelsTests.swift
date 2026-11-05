@@ -4,7 +4,7 @@ import XCTest
 
 final class ModelsTests: XCTestCase {
     func testReaderPageFitsNarrowInspectorViewport() {
-        for viewport in [20.0, 200, 279, 480, 920, 1600] {
+        for viewport in [20.0, 200, 279, 480, 580, 620, 920, 1600] {
             for illuminated in [false, true] {
                 let layout = ReaderPageLayout(viewportWidth: viewport, preferredWidth: 820,
                                               illuminated: illuminated)
@@ -14,6 +14,14 @@ final class ModelsTests: XCTestCase {
         }
         XCTAssertEqual(ReaderPageLayout(viewportWidth: 1600, preferredWidth: 820,
                                         illuminated: true).pageWidth, 820)
+    }
+    func testFloralBandHasTextClearanceAtIntermediateWidths() {
+        // Native bands and corner rosettes reach 44pt from the page edge.
+        for pageWidth in [545.0, 560, 600, 629, 630, 820] {
+            let layout = ReaderPageLayout(viewportWidth: pageWidth + 36,
+                                          preferredWidth: pageWidth, illuminated: true)
+            XCTAssertGreaterThanOrEqual(layout.innerPadding, 48)
+        }
     }
     func testDownloadCancellationRecognizesSwiftAndURLSessionCancellation() {
         XCTAssertTrue(GanjoorCancellation.isCancellation(CancellationError()))

@@ -10,7 +10,7 @@ public struct ReaderPageLayout {
         let viewport = max(0, viewportWidth)
         outerPadding = min(18, viewport / 4)
         pageWidth = min(max(0, preferredWidth), max(0, viewport - 2 * outerPadding))
-        let desiredPadding: Double = illuminated ? (pageWidth >= 630 ? 52 : 26) : 24
+        let desiredPadding: Double = illuminated ? (pageWidth >= 545 ? 52 : 26) : 24
         innerPadding = min(desiredPadding, pageWidth / 4)
     }
 }

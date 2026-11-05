@@ -12,6 +12,19 @@ struct ArashKamApp: App {
                 .frame(minWidth: 920, minHeight: 600)
         }
         .defaultSize(width: 1220, height: 780)
+        .commands {
+            // Deterministic, reviewable window sizes for native screenshot QA.
+            // The production app does not expose this testing menu.
+            if Bundle.main.bundleIdentifier == "com.arashkam.reader.qa" {
+                CommandMenu("Manuscript QA") {
+                    ForEach([920, 1220, 1600], id: \.self) { width in
+                        Button("Window \(width) × 780") {
+                            NSApp.keyWindow?.setContentSize(NSSize(width: width, height: 780))
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
