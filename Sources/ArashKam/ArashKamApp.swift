@@ -590,7 +590,10 @@ struct LibraryWindow: View {
                             } label: {
                                 HStack(spacing: 12) {
                                     PersianIlluminatedHeadpiece(template: option, compact: true)
-                                        .frame(width: 89, height: 51)
+                                        .frame(width: 180, height: 108)
+                                        .scaleEffect(0.5, anchor: .topLeading)
+                                        .frame(width: 90, height: 54, alignment: .topLeading)
+                                        .clipped()
                                         .clipShape(RoundedRectangle(cornerRadius: 4))
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(option.title).font(.subheadline.weight(.medium))
