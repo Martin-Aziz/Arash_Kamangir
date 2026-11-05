@@ -24,7 +24,8 @@ struct LibraryWindow: View {
     @State private var showingLibraryManager = false
     @State private var showingBookmarks = false
     @State private var showingReadingSettings = false
-    @State private var splitVisibility: NavigationSplitViewVisibility = .all
+    @State private var isFocusMode = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showingFilesSettings = false
     @State private var fontQuery = ""
     @State private var fontImportNotice = ""
@@ -74,71 +75,21 @@ struct LibraryWindow: View {
     }
 
     var body: some View {
-        NavigationSplitView(columnVisibility: $splitVisibility) {
-            sidebar
-                .navigationSplitViewColumnWidth(min: 210, ideal: 245, max: 350)
-        } content: {
-            collection
-                .navigationSplitViewColumnWidth(min: 245, ideal: 310, max: 450)
-        } detail: {
-            reader
-                .toolbar {
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        Button {
-                            showingReadingSettings.toggle()
-                        } label: {
-                            Image(systemName: "slider.horizontal.3")
-                        }
-                        .help("Poetry appearance and fonts")
-                        .popover(isPresented: $showingReadingSettings, arrowEdge: .bottom) {
-                            readingSettings
-                        }
-
-                        Button {
-                            splitVisibility = splitVisibility == .detailOnly ? .all : .detailOnly
-                        } label: {
-                            Image(systemName: splitVisibility == .detailOnly ?
-                                  "sidebar.left" : "book.closed")
-                        }
-                        .help(splitVisibility == .detailOnly ?
-                              "Show library columns" : "Focus on the poem")
-                        .accessibilityIdentifier("toggle-poetry-focus")
-
-                        Button {
-                            showingFilesSettings = true
-                        } label: {
-                            Image(systemName: "gearshape")
-                        }
-                        .help("Library, import and export")
-                        .accessibilityIdentifier("open-library-files-settings")
-
-                        Button {
-                            fontSize = max(17, fontSize - 2)
-                        } label: { Image(systemName: "textformat.size.smaller") }
-                            .help("Smaller Persian text")
-
-                        Button {
-                            fontSize = min(42, fontSize + 2)
-                        } label: { Image(systemName: "textformat.size.larger") }
-                            .help("Larger Persian text")
-
-                        if let poem = model.poem {
-                            Button {
-                                model.toggleBookmark()
-                            } label: {
-                                Image(systemName: model.bookmarks.contains(poem.fullURL)
-                                      ? "bookmark.fill" : "bookmark")
-                            }
-                            .help("Bookmark this poem")
-
-                            Button {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(poem.plainText, forType: .string)
-                            } label: { Image(systemName: "doc.on.doc") }
-                                .help("Copy poem text")
-                        }
-                    }
+        Group {
+            if isFocusMode {
+                readerSurface
+                    .accessibilityIdentifier("focus-poetry-reader")
+            } else {
+                NavigationSplitView {
+                    sidebar
+                        .navigationSplitViewColumnWidth(min: 210, ideal: 245, max: 350)
+                } content: {
+                    collection
+                        .navigationSplitViewColumnWidth(min: 245, ideal: 310, max: 450)
+                } detail: {
+                    readerSurface
                 }
+            }
         }
         .navigationTitle("آرش کمانگیر")
         .task { await model.bootstrap() }
@@ -168,6 +119,75 @@ struct LibraryWindow: View {
             Button("OK") { model.errorMessage = nil }
         } message: {
             Text(model.errorMessage ?? "")
+        }
+    }
+
+    @ViewBuilder
+    private var readerSurface: some View {
+        if #available(macOS 14.0, *) {
+            reader
+                .toolbar { readerToolbar }
+                .inspector(isPresented: $showingReadingSettings) {
+                    readingSettings
+                        .inspectorColumnWidth(min: 330, ideal: 380, max: 420)
+                }
+        } else {
+            reader
+                .toolbar { readerToolbar }
+                .sheet(isPresented: $showingReadingSettings) {
+                    readingSettings
+                }
+        }
+    }
+
+    private var readerToolbar: some ToolbarContent {
+        ToolbarItemGroup(placement: .primaryAction) {
+            Button {
+                showingReadingSettings.toggle()
+            } label: {
+                Image(systemName: "slider.horizontal.3")
+            }
+            .help("Poetry appearance and fonts")
+             Button {
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.26)) {
+                        isFocusMode.toggle()
+                    }
+            } label: {
+                Image(systemName: isFocusMode ?
+                      "sidebar.left" : "book.closed")
+            }
+            .help(isFocusMode ?
+                  "Show library columns" : "Focus on the poem")
+            .accessibilityIdentifier("toggle-poetry-focus")
+             Button {
+                showingFilesSettings = true
+            } label: {
+                Image(systemName: "gearshape")
+            }
+            .help("Library, import and export")
+            .accessibilityIdentifier("open-library-files-settings")
+             Button {
+                fontSize = max(17, fontSize - 2)
+            } label: { Image(systemName: "textformat.size.smaller") }
+                .help("Smaller Persian text")
+             Button {
+                fontSize = min(42, fontSize + 2)
+            } label: { Image(systemName: "textformat.size.larger") }
+                .help("Larger Persian text")
+             if let poem = model.poem {
+                Button {
+                    model.toggleBookmark()
+                } label: {
+                    Image(systemName: model.bookmarks.contains(poem.fullURL)
+                          ? "bookmark.fill" : "bookmark")
+                }
+                .help("Bookmark this poem")
+                 Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(poem.plainText, forType: .string)
+                } label: { Image(systemName: "doc.on.doc") }
+                    .help("Copy poem text")
+            }
         }
     }
 
