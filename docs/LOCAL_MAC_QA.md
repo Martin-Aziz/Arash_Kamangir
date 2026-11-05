@@ -91,6 +91,48 @@ does not establish that the GUI action targeted the correct row.
 This branch is not Mac-certified until all applicable checks pass. Record
 explicit PASS/FAIL/BLOCKED, screenshots, warnings and source paths.
 
+## P0 visual regression — genuine Focus and a Poetry Keepsake
+
+At main `d6237b29` the Focus toolbar changed its label but retained **both**
+leading macOS columns. The supplied QA archive includes
+`qa-artifacts/focus.png` as the regression evidence. Apple documents that
+macOS may keep the content column visible when `NavigationSplitViewVisibility`
+changes. The fix must use a separate full-window view, not just update the
+toolbar icon.
+
+1. Open cached Hafez ghazal 1. Click the toolbar's **Focus on the poem**,
+   then capture a QA-window-only screenshot. Both poet and poem-list columns
+   must be **absent**; the decorated poem must be centered with real room to
+   read. Inspect `focus-poetry-reader` and `reader-poem-title`.
+2. Press **Command–Shift–F**, or click **Return to library**. The **same**
+   Hafez poem and bookmark must remain selected. Repeat 1 → 2 → 1 and
+   the focus toggle after selecting poem 2.
+3. Open appearance via the toolbar. On macOS 14+, the control should display
+   a **trailing inspector**, not a popover obscuring multiple couplets.
+   Confirm changes to font/palette are visible live. On macOS 13, the
+   compatibility sheet must still work.
+4. Open **Keepsake Studio** with **Command–Shift–K** from an open poem.
+   Check that navigating couplets preserves the original order and that
+   the actual Persian words and poet/title/source are not rewritten.
+5. Save a PNG using a QA-only destination, check the file is actually
+   1440×1800 pixels and legible, no missing diacritics/glyphs, no clipped
+   lines or missing source URL. Verify **Copy with attribution** includes the
+   correct `https://ganjoor.net/hafez/ghazal/sh1` reference.
+6. Test **Noto Nastaliq**, imported Vazirmatn and fallback serif; six
+   palettes; 17 and 42pt; Quiet/Illuminated; 920, 1220 and 1600px-wide
+   windows. Check that content does **not** overflow or scroll horizontally
+   merely because the old 480px minimum page was forced.
+7. Turn **Reduce Motion** on in macOS accessibility. No decorative
+   upward-slide animation should play on a new poem. With reduced motion
+   off, the one-shot reveal must remain brief and not obscure scrolling.
+8. Exercise bookmarks, Ganjoor source links, copy, download status, QA
+   isolation and relaunch. Existing Babataher HTTP403 is tracked in #10.
+
+Report PASS/FAIL/BLOCKED for each. Save Focus-before/after, inspector,
+six palettes, two fonts, Keepsake preview, PNG export and narrow window
+screenshots. Do not auto-merge an unverified PR or delete any original
+download/font from the user's checkout.
+
 ## Functional checks
 
 1. **Navigation:** open Hafez → ghazals → poem 1; check the poet/category/poem selections and the back button.
