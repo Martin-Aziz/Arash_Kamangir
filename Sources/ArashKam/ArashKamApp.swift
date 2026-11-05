@@ -6,10 +6,7 @@ import ArashCore
 @main
 struct ArashKamApp: App {
     var body: some Scene {
-        WindowGroup(
-            Bundle.main.bundleIdentifier == GanjoorLibraryLocation.qaBundleID
-                ? "آرش کمانگیر — QA" : "آرش کمانگیر"
-        ) {
+        WindowGroup("آرش کمانگیر") {
             LibraryWindow()
                 .frame(minWidth: 920, minHeight: 600)
         }
