@@ -19,6 +19,16 @@ public enum GanjoorClientError: LocalizedError {
     }
 }
 
+/// URLSession reports task cancellation as URLError.cancelled rather than
+/// CancellationError. Treat both forms as an expected user stop in the UI.
+public enum GanjoorCancellation {
+    public static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        let value = error as NSError
+        return value.domain == NSURLErrorDomain && value.code == NSURLErrorCancelled
+    }
+}
+
 public struct GanjoorClient {
     /// Ganjoor's documented, static public export. Content is not bundled in the app.
     public static let officialBaseURL = URL(string: "https://cdn.jsdelivr.net/gh/ganjoor/ganjoor-data@main/")!

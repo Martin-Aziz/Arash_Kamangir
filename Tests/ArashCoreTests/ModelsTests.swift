@@ -3,6 +3,12 @@ import XCTest
 @testable import ArashCore
 
 final class ModelsTests: XCTestCase {
+    func testDownloadCancellationRecognizesSwiftAndURLSessionCancellation() {
+        XCTAssertTrue(GanjoorCancellation.isCancellation(CancellationError()))
+        XCTAssertTrue(GanjoorCancellation.isCancellation(URLError(.cancelled)))
+        XCTAssertFalse(GanjoorCancellation.isCancellation(URLError(.timedOut)))
+    }
+
     func testOfficialManifestDecodes() throws {
         let json = #"{"SchemaVersion":4,"GeneratedAtUtc":"2026-10-24T05:42:55Z","Poets":[{"Id":2,"Nickname":"حافظ","FullUrl":"/hafez"}]}"#
         let manifest = try JSONDecoder().decode(GanjoorManifest.self, from: Data(json.utf8))
