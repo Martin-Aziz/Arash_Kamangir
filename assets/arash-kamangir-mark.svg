@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Arash Kamangir bow and arrow">
+  <title>Arash Kamangir — bow and arrow</title>
+  <rect width="512" height="512" rx="104" fill="#12354C"/>
+  <circle cx="256" cy="256" r="199" fill="none" stroke="#C6A26B" stroke-opacity=".28" stroke-width="2"/>
+  <path d="M192 106 Q69 256 192 406" fill="none" stroke="#E9CB91" stroke-width="17" stroke-linecap="round"/>
+  <path d="M192 106 L239 256 192 406" fill="none" stroke="#E9CB91" stroke-opacity=".7" stroke-width="5" stroke-linecap="round"/>
+  <path d="M130 256 H375" fill="none" stroke="#F9EAD2" stroke-width="14" stroke-linecap="round"/>
+  <path d="M336 218 L409 256 336 294 Z" fill="#E9CB91"/>
+  <path d="M131 256 L161 223 M131 256 L161 289" fill="none" stroke="#F9EAD2" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="7" fill="#C6A26B"/>
+</svg>

@@ -1,6 +1,7 @@
 #if os(macOS)
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 import ArashCore
 
 @main
@@ -23,10 +24,32 @@ struct LibraryWindow: View {
     @State private var showingLibraryManager = false
     @State private var showingBookmarks = false
     @State private var showingReadingSettings = false
+    @State private var splitVisibility: NavigationSplitViewVisibility = .all
+    @State private var showingFilesSettings = false
+    @State private var fontQuery = ""
+    @State private var installedPersianFonts: [ReaderFontChoice] = []
+    @AppStorage("readerFontPostScriptName") private var readerFontName = ""
+    @AppStorage("readerPageStyle") private var readerPageStyle = ReaderPageStyle.illuminated.rawValue
     @AppStorage("readerFontSize") private var fontSize = 24.0
     @AppStorage("readerLineSpacing") private var lineSpacing = 5.0
     @AppStorage("readerContentWidth") private var readerContentWidth = 820.0
-    @AppStorage("readerTheme") private var readerTheme = ReaderAppearance.system.rawValue
+    @AppStorage("readerTheme") private var readerTheme = ReaderAppearance.paper.rawValue
+
+    private var pageStyle: ReaderPageStyle {
+        ReaderPageStyle(rawValue: readerPageStyle) ?? .illuminated
+    }
+
+    private var matchingFonts: [ReaderFontChoice] {
+        guard !fontQuery.isEmpty else { return installedPersianFonts }
+        return installedPersianFonts.filter {
+            $0.label.localizedCaseInsensitiveContains(fontQuery) ||
+            $0.name.localizedCaseInsensitiveContains(fontQuery)
+        }
+    }
+
+    private func refreshFonts() {
+        installedPersianFonts = ReaderFontCatalog.available()
+    }
 
     private var readerAppearance: ReaderAppearance {
         ReaderAppearance(rawValue: readerTheme) ?? .system
@@ -50,7 +73,7 @@ struct LibraryWindow: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $splitVisibility) {
             sidebar
                 .navigationSplitViewColumnWidth(min: 210, ideal: 245, max: 350)
         } content: {
@@ -65,10 +88,28 @@ struct LibraryWindow: View {
                         } label: {
                             Image(systemName: "slider.horizontal.3")
                         }
-                        .help("Reading preferences")
+                        .help("Poetry appearance and fonts")
                         .popover(isPresented: $showingReadingSettings, arrowEdge: .bottom) {
                             readingSettings
                         }
+
+                        Button {
+                            splitVisibility = splitVisibility == .detailOnly ? .all : .detailOnly
+                        } label: {
+                            Image(systemName: splitVisibility == .detailOnly ?
+                                  "sidebar.left" : "book.closed")
+                        }
+                        .help(splitVisibility == .detailOnly ?
+                              "Show library columns" : "Focus on the poem")
+                        .accessibilityIdentifier("toggle-poetry-focus")
+
+                        Button {
+                            showingFilesSettings = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
+                        .help("Library, import and export")
+                        .accessibilityIdentifier("open-library-files-settings")
 
                         Button {
                             fontSize = max(17, fontSize - 2)
@@ -100,6 +141,16 @@ struct LibraryWindow: View {
         }
         .navigationTitle("آرش کمانگیر")
         .task { await model.bootstrap() }
+        .onAppear(perform: refreshFonts)
+        .sheet(isPresented: $showingFilesSettings) {
+            LibraryFilesSettings(
+                model: model,
+                startDownload: {
+                    downloadTask = Task { await model.downloadCurrentPoet() }
+                },
+                stopDownload: { downloadTask?.cancel() },
+                exportCurrentPoem: exportCurrentPoem)
+        }
         .sheet(isPresented: $showingLibraryManager) {
             LibraryManagerView(model: model)
         }
@@ -119,9 +170,9 @@ struct LibraryWindow: View {
     private var sidebar: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Image(systemName: "books.vertical.fill")
-                    .font(.title2)
-                    .foregroundStyle(.tint)
+                ArashMark(color: readerAppearance.ornament)
+                    .frame(width: 30, height: 30)
+                    .help("Arash the Archer · آرش کمانگیر")
                 VStack(alignment: .leading, spacing: 1) {
                     Text("آرش کمانگیر").font(.headline)
                     Text("Persian Poetry Library")
@@ -297,14 +348,22 @@ struct LibraryWindow: View {
                 Divider()
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Offline library").font(.subheadline.weight(.semibold))
+                        Text("Library · کتابخانه")
+                            .font(.subheadline.weight(.semibold))
                         Spacer()
                         if model.hasSelectedPoetOffline {
-                            Label("Downloaded", systemImage: "checkmark.circle")
+                            Label("Offline", systemImage: "checkmark.circle")
                                 .font(.caption)
                                 .foregroundStyle(.green)
                         }
                     }
+                    Button {
+                        showingFilesSettings = true
+                    } label: {
+                        Label("Library & file settings", systemImage: "gearshape.2")
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("open-library-files-settings-from-collection")
                     if model.isDownloading {
                         if model.downloadTotal > 0 {
                             ProgressView(value: Double(model.downloadDone),
@@ -312,28 +371,11 @@ struct LibraryWindow: View {
                         } else {
                             ProgressView()
                         }
+                    }
+                    if !model.downloadMessage.isEmpty {
                         Text(model.downloadMessage)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Button("Stop download", role: .cancel) {
-                            downloadTask?.cancel()
-                        }
-                        .buttonStyle(.bordered)
-                    } else {
-                        Button {
-                            downloadTask = Task { await model.downloadCurrentPoet() }
-                        } label: {
-                            Label(model.hasSelectedPoetOffline ? "Refresh offline poet" : "Download poet",
-                                  systemImage: "square.and.arrow.down")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .accessibilityIdentifier("download-selected-poet")
-                        .disabled(model.selectedPoet == nil)
-                        if !model.downloadMessage.isEmpty {
-                            Text(model.downloadMessage)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
                     }
                 }
                 .padding(13)
@@ -345,47 +387,30 @@ struct LibraryWindow: View {
     }
 
     private var reader: some View {
-        Group {
+        ZStack(alignment: .bottomTrailing) {
             if let poem = model.poem {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        Text(poem.fullTitle ?? poem.title)
-                            .font(.system(size: 27, weight: .semibold, design: .serif))
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
-                            .accessibilityAddTraits(.isHeader)
-                            .accessibilityIdentifier("reader-poem-title")
-                            .accessibilityValue(Text(poem.fullURL))
-                        Divider()
-                        VStack(spacing: 20 + lineSpacing) {
-                            ForEach(poem.readingGroups) { group in
-                                if group.verses.count == 2 &&
-                                    group.verses[0].position == "Right" &&
-                                    group.verses[1].position == "Left" {
-                                    HStack(alignment: .firstTextBaseline, spacing: 24) {
-                                        verseText(group.verses[0].text)
-                                        verseText(group.verses[1].text)
-                                    }
-                                } else {
-                                    ForEach(group.verses) { verse in
-                                        verseText(verse.text)
-                                    }
-                                }
-                            }
-                        }
-                        .environment(\.layoutDirection, .rightToLeft)
-                        if let source = URL(string: "https://ganjoor.net" + poem.fullURL) {
-                            Link("View original on Ganjoor · مشاهده در گنجور",
-                                 destination: source)
-                                .font(.caption)
-                                .padding(.top, 18)
-                        }
-                    }
-                    .frame(maxWidth: readerContentWidth)
-                    .padding(.horizontal, 36)
-                    .padding(.vertical, 44)
-                    .frame(maxWidth: .infinity)
+                IlluminatedReaderView(
+                    poem: poem,
+                    poetName: model.selectedPoet?.nickname ?? "دیوان شعر",
+                    collectionName: model.category?.title ?? "",
+                    appearance: readerAppearance,
+                    style: pageStyle,
+                    fontName: readerFontName,
+                    fontSize: fontSize,
+                    lineSpacing: lineSpacing,
+                    contentWidth: readerContentWidth)
+                    .id(poem.fullURL)
+
+                Button {
+                    showingReadingSettings = true
+                } label: {
+                    Label("Style", systemImage: "paintpalette")
+                        .font(.subheadline.weight(.medium))
                 }
+                .buttonStyle(.plain)
+                .modifier(ReaderGlassChrome())
+                .help("Change poetry fonts, colors and page ornament")
+                .padding(20)
             } else if model.isLoading {
                 VStack(spacing: 12) {
                     ProgressView {
@@ -401,14 +426,21 @@ struct LibraryWindow: View {
                 .accessibilityIdentifier("reader-loading")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                EmptyPanel(symbol: "text.book.closed", headline: "A place for poetry",
-                           subtitle: "Browse a collection and select a poem to begin reading.")
+                VStack(spacing: 15) {
+                    ArashMark(color: readerAppearance.ornament)
+                        .frame(width: 55, height: 55)
+                    Text("در باغ سخن")
+                        .font(ReaderFontCatalog.font(readerFontName, size: 29))
+                        .foregroundStyle(readerAppearance.foreground)
+                    Text("Choose a poem and let the page become its home.")
+                        .foregroundStyle(readerAppearance.foreground.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(readerAppearance.background)
-        .foregroundStyle(readerAppearance.foreground)
-        .tint(readerAppearance.linkTint)
     }
 
     private var readingSettings: some View {
