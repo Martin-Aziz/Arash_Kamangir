@@ -145,11 +145,13 @@ final class AppModel: ObservableObject {
                 }
             await refreshOfflineLibrary()
             downloadMessage = "Offline download complete."
-        } catch is CancellationError {
-            downloadMessage = "Download stopped. Already downloaded files are kept."
         } catch {
-            downloadMessage = "Download interrupted. You can try again to resume."
-            errorMessage = error.localizedDescription
+            if GanjoorCancellation.isCancellation(error) {
+                downloadMessage = "Download stopped. Already downloaded files are kept."
+            } else {
+                downloadMessage = "Download interrupted. You can try again to resume."
+                errorMessage = error.localizedDescription
+            }
         }
     }
 
